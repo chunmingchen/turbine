@@ -1,9 +1,11 @@
 // Reference: VTK/Examples/VisualizationAlgorithms/Python/StreamlinesWithLineWidget.py
+#include <list>
+#include <iterator>
+
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <list>
-#include <iterator>
+#include <omp.h>
 
 #include "vtkOSUFlow.h"
 #include "vtkDataSet.h"
@@ -47,7 +49,7 @@ vtkPolyData *seeds ;
 vtkSmartPointer<vtkUnstructuredGrid> getData_vtu()
 {
 	vtkNew<vtkXMLUnstructuredGridReader> reader;
-	reader->SetFileName("/data/flow2/Stg37/vtk/merged4.vtu");
+	reader->SetFileName("/data/flow2/Stg37/vtk/merged.vtu");
 	reader->Update();
 
 	vtkUnstructuredGrid *data = reader->GetOutput();
@@ -77,9 +79,12 @@ vtkSmartPointer<vtkUnstructuredGrid> getData_vtu()
 	return data;
 }
 
-#define RES 0.002 // sampling resolution
+#define RES 0.003 // sampling resolution
 int main(int argc, char **argv)
 {
+	//omp_set_num_threads(4);
+	//printf("thread=%d max threads=%d\n", omp_get_num_threads(), omp_get_max_threads());
+
 	// read data
 	printf("Loading...\n");
 	vtkSmartPointer<vtkUnstructuredGrid> data = getData_vtu();
@@ -93,71 +98,75 @@ int main(int argc, char **argv)
 	printf("w=%d h=%d d=%d\n", w,h,d);
 
 
-	int concurrent_seeds = w*h;
-	vector<VECTOR3> seedAry(concurrent_seeds);
+	vector<VECTOR3> endPos(w*h*d);
 
-	OSUFlow *osuflow = new OSUFlow();
-	osuflow->SetFlowField(new VectorFieldVTK(data));
-	osuflow->SetIntegrationParams(.001, .01);
-
-	FILE *fp = fopen("flowmap.raw", "wb");
-	vector<VECTOR3> endPos(concurrent_seeds);
-
-	int x,y,z, i;
-//#pragma omp for
-	for (z=0; z<d; z++)
+	#pragma omp parallel shared(endPos, data)
 	{
-		seedAry.clear();
-		i=0;
-		for (y=0; y<h; y++)
-			for (x=0; x<w; x++)
-				seedAry[i++] = VECTOR3(x*RES+bounds[0],y*RES+bounds[2],z*RES+bounds[4]);
+		//printf("thread id=%d %p\n", omp_get_thread_num(), &endPos[0]);
+		int concurrent_seeds = w*h;
+		vector<VECTOR3> seedAry(concurrent_seeds);
 
-		int cur_seeds = concurrent_seeds;
-		//if (cur_seeds+i > seeds) cur_seeds = seeds-i;
+		OSUFlow *osuflow = new OSUFlow();
+		osuflow->SetFlowField(new VectorFieldVTK(data));
+		osuflow->SetIntegrationParams(.01, .1);
 
-		i=0;
-		// gen
-		list<vtListSeedTrace*> trace;
-		osuflow->GenStreamLines(&seedAry[i], FORWARD_DIR, cur_seeds, 1000, trace);
-		if (trace.size() != cur_seeds)
-			printf("Error: list gets %zu seeds != %d", trace.size(), cur_seeds);
+		int x,y,z, i;
 
-
-		int j = 0;
-		std::list<vtListSeedTrace*>::iterator it;
-		for (it = trace.begin(); it != trace.end(); it++)
+		#pragma omp for schedule(dynamic,10)
+		for (z=0; z<d; z++)
 		{
-			vtListSeedTrace::iterator it1 ;
-			//printf("trace: %zu \n ", (*it)->size());
-			if ((*it)->size()) {
+			//seedAry.clear();
+			i=0;
+			for (y=0; y<h; y++)
+				for (x=0; x<w; x++)
+					seedAry[i++] = VECTOR3(x*RES+bounds[0],y*RES+bounds[2],z*RES+bounds[4]);
 
-				it1 = (*it)->end();
-				--it1;
+			int cur_seeds = concurrent_seeds;
+			//if (cur_seeds+i > seeds) cur_seeds = seeds-i;
 
-				VECTOR3 &p = **it1;
-				//VECTOR3 &p0 = seedAry[i+j];
-				endPos[j] = p; //VECTOR3(p[0]-p0[0], p[1]-p0[1], p[2]-p0[2]);
-				//printf("%f %f %f\n", p[0], p[1], p[2]);
+			i=0;
+			// gen
+			list<vtListSeedTrace*> trace;
+			osuflow->GenStreamLines(&seedAry[i], FORWARD_DIR, cur_seeds, 1000, trace);
+			if (trace.size() != cur_seeds)
+				printf("Error: list gets %zu seeds != %d", trace.size(), cur_seeds);
 
-			} else {
-				VECTOR3 &p0 = seedAry[i+j];
-				endPos[j] = p0;
+
+			int j = 0;
+			std::list<vtListSeedTrace*>::iterator it;
+			for (it = trace.begin(); it != trace.end(); it++)
+			{
+				vtListSeedTrace::iterator it1 ;
+				//printf("trace: %zu \n ", (*it)->size());
+				if ((*it)->size()) {
+
+					it1 = (*it)->end();
+					--it1;
+
+					VECTOR3 &p = **it1;
+					endPos[z*concurrent_seeds + j] = p;
+					//printf("%f %f %f\n", p[0], p[1], p[2]);
+
+				} else {
+					VECTOR3 &p0 = seedAry[i+j];
+					endPos[z*concurrent_seeds + j] = p0;
+				}
+
+				for (it1=(*it)->begin(); it1!=(*it)->end(); it1++)
+					delete (*it1);
+				delete (*it);
+				j++;
 			}
 
-			for (it1=(*it)->begin(); it1!=(*it)->end(); it1++)
-				delete (*it1);
-			delete (*it);
-			j++;
+			printf("z=%d done\n", z);
 		}
 
-		fwrite(&endPos[0], 12, cur_seeds, fp);
-		printf("z=%d done\n", z);
+
+		delete osuflow;
 	}
 
-
-	delete osuflow;
-
+	FILE *fp = fopen("flowmap.raw", "wb");
+	fwrite(&endPos[0], sizeof(endPos[0]), w*h*d, fp);
 	fclose(fp);
 	printf("w=%d h=%d d=%d RES=%f\n", w,h,d, RES);
 

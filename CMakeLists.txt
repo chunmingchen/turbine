@@ -8,6 +8,11 @@ set(OSUFLOW_DIR "/usr/local/osuflow" CACHE PATH "OSUFlow dir")
 set(OSUFLOW_INCLUDE_DIR "${OSUFLOW_DIR}/include")
 set(OSUFLOW_LIB_DIR "${OSUFLOW_DIR}/lib")
 
+# OpenMP
+#find_package(OpenMP)
+#set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+
 
 # convertVTK
 
@@ -30,4 +35,7 @@ target_link_libraries( streamline  OSUFlowVTK OSUFlow_r ${VTK_LIBRARIES})
 
 add_executable(computeFTLE computeFTLE.cpp)
 target_link_libraries( computeFTLE   OSUFlow_r)
+
+add_executable(regular_sampling regular_sampling.cpp)
+target_link_libraries( regular_sampling ${VTK_LIBRARIES} )
 

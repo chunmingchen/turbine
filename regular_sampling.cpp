@@ -43,6 +43,7 @@
 using namespace std;
 
 #define DATA_PATH "./" //"/data/flow2/Stg37/"
+//#define DATA_PATH "/data/turbine_Stg/zDIR.P3D.rel.6201-11001"
 
 vtkLineWidget *lineWidget;
 vtkRenderWindow *renWin;
@@ -65,10 +66,10 @@ vtkSmartPointer<vtkMultiPieceDataSet> load_list(char *list_fname)
 		char file1[1024], file2[1024]; // q, xyz
 		fgets(s, 1024, fp);
 		*strchr(s, '\n')=0; // remove the last new-line
-		sprintf(file1, "%s%s", DATA_PATH, s);
+		sprintf(file1, "%s/%s", DATA_PATH, s);
 		fgets(s, 1024, fp);
 		*strchr(s, '\n')=0; // remove the last new-line
-		sprintf(file2, "%s%s", DATA_PATH, s);
+		sprintf(file2, "%s/%s", DATA_PATH, s);
 		printf("xyz: [%s]   q: [%s]\n", file1, file2);
 
 		// Start by loading some data.
@@ -87,9 +88,9 @@ vtkSmartPointer<vtkMultiPieceDataSet> load_list(char *list_fname)
 	    //reader->AddFunction(144); //kinetic energy
 	    //reader->AddFunction(153); //vel magnitude
 	    //reader->AddFunction(163); //stagnation energy
-	    //reader->AddFunction(170); //entropy
+	    reader->AddFunction(170); //entropy
 	    //reader->AddFunction(184); //swirl
-	    //reader->AddFunction(211); //vorticity magnitude
+	    reader->AddFunction(211); //vorticity magnitude
 
 	    //available vector fields in the data
 	    reader->AddFunction(200); //velocity
@@ -101,9 +102,28 @@ vtkSmartPointer<vtkMultiPieceDataSet> load_list(char *list_fname)
 	    reader->Update();
 		vtkDataSet *current_data = vtkDataSet::SafeDownCast(reader->GetOutput()->GetBlock(0));
 
+		//extract uvel
+		//<
+		vtkSmartPointer<vtkFloatArray> uvel = vtkSmartPointer<vtkFloatArray>::New();
+		uvel->SetName("Uvel");
 
+		vtkDataArray* velocity_array;
+		vtkPointData* PointData;
+		PointData = current_data->GetPointData();
+		velocity_array = PointData->GetArray("Velocity");
+		uvel->Resize(velocity_array->GetSize()/3);
+		for(int p=0;p<velocity_array->GetSize()/3;p++)
+			{
+				double value[3];
+			 	velocity_array->GetTuple(p,value);
+			 	float datavalue = value[0];
+			 	uvel->InsertTuple1(p,datavalue);
+			}
+	    current_data->GetPointData()->AddArray(uvel);
+	    //>
 
-		mb->SetPiece(i, current_data);
+	    mb->SetPiece(i, current_data);
+
 
 	}
 	return mb;
@@ -130,21 +150,10 @@ int main(int argc, char **argv)
 
 	// set interpolator
 
-	vtkInterpolatedVelocityField *vecInterp = vtkInterpolatedVelocityField::New();
-	for (b=0; b<mb->GetNumberOfPieces(); b++)
-	{
-		vtkDataSet *dataset = vtkDataSet::SafeDownCast( mb->GetPiece(b) );
-		double *bounds = dataset->GetBounds();
-		//printf("bounds: %f %f %f %f %f %f\n", bounds[0], bounds[1], bounds[2], bounds[3], bounds[4], bounds[5], bounds[6]);
-
-		// vector
-		vecInterp->AddDataSet(dataset);
-	}
 
 	for (d=0; d<3; d++)
 		extent[d] = (datamax[d]-datamin[d])/RES+1;
 	printf("Extent: %d %d %d\n", extent[0], extent[1], extent[2]);
-	vector<float3> vec_ary(extent[0]*extent[1]*extent[2]);
 
 #if 1
 
@@ -174,7 +183,7 @@ int main(int argc, char **argv)
 	vtkSmartPointer<vtkImageData> output = vtkImageData::SafeDownCast(resampler->GetOutput());
 
 	char filename[256];
-	sprintf(filename, "%s.vti", argv[1]);
+	sprintf(filename, "%s_r%g.vti", argv[1], RES);
 	vtkNew<vtkXMLImageDataWriter> imw;
 	imw->SetFileName(filename);
 	imw->SetDataModeToBinary();
@@ -223,6 +232,19 @@ int main(int argc, char **argv)
 #endif
 
 #else
+	vtkInterpolatedVelocityField *vecInterp = vtkInterpolatedVelocityField::New();
+	for (b=0; b<mb->GetNumberOfPieces(); b++)
+	{
+		vtkDataSet *dataset = vtkDataSet::SafeDownCast( mb->GetPiece(b) );
+		double *bounds = dataset->GetBounds();
+		//printf("bounds: %f %f %f %f %f %f\n", bounds[0], bounds[1], bounds[2], bounds[3], bounds[4], bounds[5], bounds[6]);
+
+		// vector
+		vecInterp->AddDataSet(dataset);
+	}
+	vector<float3> vec_ary(extent[0]*extent[1]*extent[2]);
+
+	// extract velocity
 	for (k=0; k<extent[2]; k++)
 	{
 		for (j=0; j<extent[1]; j++)

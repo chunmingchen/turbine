@@ -39,3 +39,10 @@ target_link_libraries( computeFTLE   OSUFlow_r)
 add_executable(regular_sampling regular_sampling.cpp)
 target_link_libraries( regular_sampling ${VTK_LIBRARIES} )
 
+add_executable(pmi_importance_2var pmi_importance_2var.cpp)
+target_link_libraries( pmi_importance_2var ${VTK_LIBRARIES} )
+
+#add_definitions(-std=gnu++0x)
+
+add_executable(stat stat.cpp)
+target_link_libraries( stat ${VTK_LIBRARIES} )

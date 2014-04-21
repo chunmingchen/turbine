@@ -5,6 +5,7 @@ FIND_PACKAGE(VTK REQUIRED)
 include(${VTK_USE_FILE})
 
 set(OSUFLOW_DIR "/usr/local/osuflow" CACHE PATH "OSUFlow dir")
+set(JCLIB_DIR "${CMAKE_SOURCE_DIR}/lib/jclib/" CACHE PATH "JCLib dir")
 set(OSUFLOW_INCLUDE_DIR "${OSUFLOW_DIR}/include")
 set(OSUFLOW_LIB_DIR "${OSUFLOW_DIR}/lib")
 
@@ -21,8 +22,9 @@ target_link_libraries( convertVTK ${VTK_LIBRARIES} )
 
 ## streamline render
 
-include_directories(${OSUFLOW_INCLUDE_DIR} ${OSUFLOW_INCLUDE_DIR}/VTK)
-link_directories(${OSUFLOW_LIB_DIR})
+include_directories(${OSUFLOW_INCLUDE_DIR} ${OSUFLOW_INCLUDE_DIR}/VTK
+    ${JCLIB_DIR})
+link_directories(${OSUFLOW_LIB_DIR} ${JCLIB_DIR})
 
 #add_executable(StreamlineRenderPlot3D StreamlineRenderPlot3D.cpp)
 #target_link_libraries( StreamlineRenderPlot3D  OSUFlowVTK OSUFlow_r ${VTK_LIBRARIES})
@@ -46,3 +48,6 @@ target_link_libraries( pmi_importance_2var ${VTK_LIBRARIES} )
 
 add_executable(stat stat.cpp)
 target_link_libraries( stat ${VTK_LIBRARIES} )
+
+add_executable(stat_raw stat_raw.cpp)
+target_link_libraries( stat_raw ${VTK_LIBRARIES} jclib OSUFlow_r)

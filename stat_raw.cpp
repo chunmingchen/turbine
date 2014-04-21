@@ -167,7 +167,7 @@ void computeParVel(vtkSmartPointer<vtkMultiPieceDataSet> mb, int layer_id, char 
 
 		std::vector<int> point_id_ary(dim[0]*dim[1]);
 
-#define xyz_id(x,y,z) (x+dim[0]*(y+dim[1]*z))
+#define xyz_id(x,y,z) ((x)+dim[0]*((y)+dim[1]*(z)))
 		for (y=0; y<dim[1]; y++)
 			for (x=0; x<dim[0]; x++)
 			{
@@ -192,7 +192,8 @@ void computeParVel(vtkSmartPointer<vtkMultiPieceDataSet> mb, int layer_id, char 
 
 					VECTOR3 v1(p1[0]-p[0], p1[1]-p[1], p1[2]-p[2]);
 					VECTOR3 vel(value[0], value[1], value[2]);
-					double projected_vel = dot(v1, vel)/v1.GetMag();
+					double projected_vel =
+							v1.GetMag()? dot(v1, vel)/v1.GetMag() : 0;
 					out_surface_vel_array->InsertNextTuple(&projected_vel);
 				} else {
 					double v = 0;
@@ -209,10 +210,10 @@ void computeParVel(vtkSmartPointer<vtkMultiPieceDataSet> mb, int layer_id, char 
 			for (x=0; x<dim[0]-1; x++)
 			{
 				vtkNew<vtkQuad> quad;
-				quad->GetPointIds()->SetId(0, point_id_ary[xyz_id(x,y,z)] );
-				quad->GetPointIds()->SetId(1, point_id_ary[xyz_id(x+1,y,z)] );
-				quad->GetPointIds()->SetId(2, point_id_ary[xyz_id(x+1,y+1,z)] );
-				quad->GetPointIds()->SetId(3, point_id_ary[xyz_id(x,y+1,z)] );
+				quad->GetPointIds()->SetId(0, point_id_ary[xyz_id(x,y,1)] );
+				quad->GetPointIds()->SetId(1, point_id_ary[xyz_id(x+1,y,1)] );
+				quad->GetPointIds()->SetId(2, point_id_ary[xyz_id(x+1,y+1,1)] );
+				quad->GetPointIds()->SetId(3, point_id_ary[xyz_id(x,y+1,1)] );
 				out_quad_array->InsertNextCell(quad.GetPointer());
 			}
 	}
@@ -223,6 +224,7 @@ void computeParVel(vtkSmartPointer<vtkMultiPieceDataSet> mb, int layer_id, char 
 	poly->SetPolys(out_quad_array.GetPointer());
 
 
+	// save file
 	vtkNew<vtkXMLPolyDataWriter> pw;
 	pw->SetFileName(out_filename);
 	pw->SetInputData(poly.GetPointer());

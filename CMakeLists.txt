@@ -51,3 +51,6 @@ target_link_libraries( stat ${VTK_LIBRARIES} )
 
 add_executable(stat_raw stat_raw.cpp)
 target_link_libraries( stat_raw ${VTK_LIBRARIES} jclib OSUFlow_r)
+
+add_executable(VortexDetector VortexDetector.C)
+target_link_libraries( VortexDetector  OSUFlowVTK OSUFlow_r ${VTK_LIBRARIES} jclib)

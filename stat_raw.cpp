@@ -124,8 +124,171 @@ vtkSmartPointer<vtkMultiPieceDataSet> load_list(char *list_fname)
 	return mb;
 }
 
+int dim[3];
 
-void computeParVel(vtkSmartPointer<vtkMultiPieceDataSet> mb, int layer_id, char *out_filename)
+#define xyz_id(x,y,z) ((x)+dim[0]*((y)+dim[1]*(z)))
+
+// get tangent velocity at computation space x,y,z
+VECTOR3 get_centroid_vec(vtkDataArray *ary, int offset[8][3] , int x, int y, int z)
+{
+    VECTOR3 vec[8];
+
+    for (int off=0; off<8; off++)
+    {
+        // get velocity
+        int idx = xyz_id(x+offset[off][0], y+offset[off][1], z+offset[off][2]);
+        double *value = ary->GetTuple3(idx);
+        vec[off] = VECTOR3(value[0], value[1], value[2]);
+    }
+    // centroid vec/pos
+    VECTOR3 cvec = (vec[0]+vec[1]+vec[2]+vec[3]+vec[4]+vec[5]+vec[6]+vec[7])*0.125;
+    return cvec;
+}
+
+VECTOR3 get_centroid_normal(vtkDataArray *ary, int offset[8][3], int x, int y, int z)
+{
+    VECTOR3 pos[8];
+
+    for (int off=0; off<8; off++)
+    {
+        // get velocity
+        int idx = xyz_id(x+offset[off][0], y+offset[off][1], z+offset[off][2]);
+        double *value = ary->GetTuple3(idx);
+        pos[off] = VECTOR3(value[0], value[1], value[2]);
+    }
+    VECTOR3 cpos0 = (pos[0] + pos[4])*0.5;
+    VECTOR3 cpos1 = (pos[1] + pos[5])*0.5;
+    VECTOR3 cpos2 = (pos[2] + pos[6])*0.5;
+    VECTOR3 cpos3 = (pos[3] + pos[7])*0.5;
+
+    // compute two vectors
+    VECTOR3 va = cpos3-cpos0;
+    VECTOR3 vb = cpos1-cpos2;
+
+    VECTOR3 n = cross(vb, va);
+    return n*(1./n.GetMag());
+}
+
+// Derivation of tangent velocity based on Prof. Chen
+void computeDTangentVelocity(vtkSmartPointer<vtkMultiPieceDataSet> mb, char *out_filename)
+{
+    static int offset[8][3] = {{0,0,0}, {1,0,0}, {0,1,0}, {1,1,0}, {0,0,1}, {1,0,1}, {0,1,1}, {1,1,1}};
+    static int offset_2d[8][3] = {{0,0,0}, {1,0,0}, {0,1,0}, {1,1,0}, {0,0,0}, {1,0,0}, {0,1,0}, {1,1,0}};
+    vtkNew<vtkPoints> points;
+
+    vtkNew<vtkCellArray> out_quad_array;
+
+    vtkNew<vtkFloatArray> out_vel_array;
+    out_vel_array->SetName("Velocity");
+    out_vel_array->SetNumberOfComponents(3);
+
+    vtkNew<vtkFloatArray> out_dvt_array;
+    out_dvt_array->SetName("d_tangent_vel");
+    out_dvt_array->SetNumberOfComponents(1);
+
+    vtkNew<vtkFloatArray> out_normal_array;
+    out_normal_array->SetName("normal");
+    out_normal_array->SetNumberOfComponents(3);
+
+    // go through each piece:
+    int pieces = mb->GetNumberOfPieces();
+    for (int i=0; i<pieces; i++	)
+    {
+        //mb->GetPiece(i)->PrintSelf(std::cout, vtkIndent(0));
+        vtkStructuredGrid *data = vtkStructuredGrid::SafeDownCast( mb->GetPiece(i) );
+        assert(data);
+
+        //< get extent
+        int *ext = data->GetExtent();
+        //int dim[3];
+        dim[0] = ext[1]-ext[0]+1;
+        dim[1] = ext[3]-ext[2]+1;
+        dim[2] = ext[5]-ext[4]+1;
+        //>
+
+        vtkDataArray *v_ary = data->GetPointData()->GetArray("Velocity");
+        vtkDataArray *p_ary = data->GetPoints()->GetData(); // point array
+        int x,y,z; // data space
+
+        std::vector<int> point_id_ary; //(dim[0]*dim[1]);
+
+        {
+            z = 0;
+            for (y=0; y<dim[1]-1; y++)
+                for (x=0; x<dim[0]-1; x++)
+                {
+                    VECTOR3 n1 = get_centroid_normal(p_ary, offset_2d, x,y,z);
+                    VECTOR3 n2 = get_centroid_normal(p_ary, offset, x,y,z);
+                    VECTOR3 n3 = get_centroid_normal(p_ary, offset, x,y,z+1);
+
+                    VECTOR3 cvel1 = get_centroid_vec(v_ary, offset_2d, x,y,z);
+                    VECTOR3 cvel2 = get_centroid_vec(v_ary, offset, x,y,z);
+                    VECTOR3 cvel3 = get_centroid_vec(v_ary, offset, x,y,z+1);
+
+                    float vt1 = dot(cvel1, n1);
+                    float vt2 = dot(cvel2, n2);
+                    float vt3 = dot(cvel3, n3);
+
+                    VECTOR3 cpos1 = get_centroid_vec(p_ary, offset_2d, x,y,z);
+                    VECTOR3 cpos2 = get_centroid_vec(p_ary, offset, x,y,z);
+                    VECTOR3 cpos3 = get_centroid_vec(p_ary, offset, x,y,z+1);
+
+                    float h2 = dot(cpos2-cpos1, n1);
+                    float h3 = dot(cpos3-cpos1, n1);
+                    double h2s = (double)h2*h2;
+                    double h3s = (double)h3*h3;
+
+                    float d_vt = ((h3s-h2s)*vt1 - h3s*vt2+h2s*vt3) / (h3*h2s-h2*h3s);
+
+                    // VTK output :
+
+                    // insert point
+                    int id = points->InsertNextPoint(cpos2[0], cpos2[1], cpos2[2]);
+                    point_id_ary.push_back(id);
+
+                    // insert velocity
+                    out_normal_array->InsertNextTuple3(n2[0], n2[1], n2[2]);
+                    out_vel_array->InsertNextTuple3(cvel2[0], cvel2[1], cvel2[2]);
+                    out_dvt_array->InsertNextTuple(&d_vt);
+
+                }
+        }
+
+        // create surface
+        for (y=0; y<dim[1]-2; y++)
+            for (x=0; x<dim[0]-2; x++)
+            {
+
+#define xyz_id1(x,y) ((x)+(dim[0]-1)*(y))
+                vtkNew<vtkQuad> quad;
+                quad->GetPointIds()->SetId(0, point_id_ary[xyz_id1(x,y)] );
+                quad->GetPointIds()->SetId(1, point_id_ary[xyz_id1(x+1,y)] );
+                quad->GetPointIds()->SetId(2, point_id_ary[xyz_id1(x+1,y+1)] );
+                quad->GetPointIds()->SetId(3, point_id_ary[xyz_id1(x,y+1)] );
+                out_quad_array->InsertNextCell(quad.GetPointer());
+#undef xyz_id1
+            }
+    }
+    printf("Done\n");
+    vtkNew<vtkPolyData> poly;
+    poly->SetPoints(points.GetPointer());
+    poly->GetPointData()->SetVectors(out_vel_array.GetPointer());
+    poly->GetPointData()->SetNormals(out_normal_array.GetPointer());
+    poly->GetPointData()->SetScalars(out_dvt_array.GetPointer());
+    poly->SetPolys(out_quad_array.GetPointer());
+
+
+    // save file
+    printf("Output filename: %s\n", out_filename);
+    vtkNew<vtkXMLPolyDataWriter> pw;
+    pw->SetFileName(out_filename);
+    pw->SetInputData(poly.GetPointer());
+    pw->Write();
+
+}
+
+
+void computeParVel_simple(vtkSmartPointer<vtkMultiPieceDataSet> mb, int layer_id, char *out_filename)
 {
 	vtkNew<vtkPoints> points;
 
@@ -152,8 +315,8 @@ void computeParVel(vtkSmartPointer<vtkMultiPieceDataSet> mb, int layer_id, char 
 
 		//< get extent
 	    int *ext = data->GetExtent();
-	    int dim[3];
-	    dim[0] = ext[1]+1;
+        //int dim[3];
+        dim[0] = ext[1]+1;
 	    dim[1] = ext[3]+1;
 	    dim[2] = ext[5]+1;
 	    assert(ext[0]==0);
@@ -167,7 +330,6 @@ void computeParVel(vtkSmartPointer<vtkMultiPieceDataSet> mb, int layer_id, char 
 
 		std::vector<int> point_id_ary(dim[0]*dim[1]);
 
-#define xyz_id(x,y,z) ((x)+dim[0]*((y)+dim[1]*(z)))
 		for (y=0; y<dim[1]; y++)
 			for (x=0; x<dim[0]; x++)
 			{
@@ -210,10 +372,10 @@ void computeParVel(vtkSmartPointer<vtkMultiPieceDataSet> mb, int layer_id, char 
 			for (x=0; x<dim[0]-1; x++)
 			{
 				vtkNew<vtkQuad> quad;
-				quad->GetPointIds()->SetId(0, point_id_ary[xyz_id(x,y,1)] );
-				quad->GetPointIds()->SetId(1, point_id_ary[xyz_id(x+1,y,1)] );
-				quad->GetPointIds()->SetId(2, point_id_ary[xyz_id(x+1,y+1,1)] );
-				quad->GetPointIds()->SetId(3, point_id_ary[xyz_id(x,y+1,1)] );
+                quad->GetPointIds()->SetId(0, point_id_ary[xyz_id(x,y,0)] );
+                quad->GetPointIds()->SetId(1, point_id_ary[xyz_id(x+1,y,0)] );
+                quad->GetPointIds()->SetId(2, point_id_ary[xyz_id(x+1,y+1,0)] );
+                quad->GetPointIds()->SetId(3, point_id_ary[xyz_id(x,y+1,0)] );
 				out_quad_array->InsertNextCell(quad.GetPointer());
 			}
 	}
@@ -235,16 +397,15 @@ void computeParVel(vtkSmartPointer<vtkMultiPieceDataSet> mb, int layer_id, char 
 int main(int argc, char **argv)
 {
 	printf("usage: filename layer_id output_filename\n");
-	char *filename = argv[1];
-	int layer_id = atoi(argv[2]);
-	char *out_filename = argv[3];
+    char *filename = argv[1];
+    char *out_filename = argv[2];
 
 	// load data
 	vtkSmartPointer<vtkMultiPieceDataSet> mb = load_list(filename);
 
 
 	printf("computing...\n");
-    computeParVel(mb, layer_id, out_filename);
+    computeDTangentVelocity(mb, out_filename);
 
 
 }

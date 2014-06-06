@@ -166,9 +166,11 @@ VECTOR3 get_centroid_normal(vtkDataArray *ary, int offset[8][3], int x, int y, i
     VECTOR3 vb = cpos1-cpos2;
 
     VECTOR3 n = cross(vb, va);
-    return n*(1./n.GetMag());
+    n.Normalize();
+    return n;
 }
 
+#define DVT_VERBOSE
 // Derivation of tangent velocity based on Prof. Chen
 void computeDTangentVelocity(vtkSmartPointer<vtkMultiPieceDataSet> mb, char *out_filename)
 {
@@ -189,6 +191,24 @@ void computeDTangentVelocity(vtkSmartPointer<vtkMultiPieceDataSet> mb, char *out
     vtkNew<vtkFloatArray> out_normal_array;
     out_normal_array->SetName("normal");
     out_normal_array->SetNumberOfComponents(3);
+
+#ifdef DVT_VERBOSE
+    vtkNew<vtkFloatArray> out_vt1_array;
+    out_vt1_array->SetName("Vt1");
+    out_vt1_array->SetNumberOfComponents(1);
+    vtkNew<vtkFloatArray> out_vt2_array;
+    out_vt2_array->SetName("Vt2");
+    out_vt2_array->SetNumberOfComponents(1);
+    vtkNew<vtkFloatArray> out_vt3_array;
+    out_vt3_array->SetName("Vt3");
+    out_vt3_array->SetNumberOfComponents(1);
+    vtkNew<vtkFloatArray> out_h2_array;
+    out_h2_array->SetName("h2");
+    out_h2_array->SetNumberOfComponents(1);
+    vtkNew<vtkFloatArray> out_h3_array;
+    out_h3_array->SetName("h3");
+    out_h3_array->SetNumberOfComponents(1);
+#endif
 
     // go through each piece:
     int pieces = mb->GetNumberOfPieces();
@@ -225,9 +245,15 @@ void computeDTangentVelocity(vtkSmartPointer<vtkMultiPieceDataSet> mb, char *out
                     VECTOR3 cvel2 = get_centroid_vec(v_ary, offset, x,y,z);
                     VECTOR3 cvel3 = get_centroid_vec(v_ary, offset, x,y,z+1);
 
-                    float vt1 = dot(cvel1, n1);
-                    float vt2 = dot(cvel2, n2);
-                    float vt3 = dot(cvel3, n3);
+                    // velocity in normal direction
+                    float vn1 = dot(cvel1, n1);
+                    float vn2 = dot(cvel2, n2);
+                    float vn3 = dot(cvel3, n3);
+
+                    // velocity in tangential direction
+                    float vt1 = (cvel1-n1*vn1).GetMag();
+                    float vt2 = (cvel2-n2*vn2).GetMag();
+                    float vt3 = (cvel3-n3*vn3).GetMag();
 
                     VECTOR3 cpos1 = get_centroid_vec(p_ary, offset_2d, x,y,z);
                     VECTOR3 cpos2 = get_centroid_vec(p_ary, offset, x,y,z);
@@ -235,7 +261,7 @@ void computeDTangentVelocity(vtkSmartPointer<vtkMultiPieceDataSet> mb, char *out
 
                     float h2 = dot(cpos2-cpos1, n1);
                     float h3 = dot(cpos3-cpos1, n1);
-                    double h2s = (double)h2*h2;
+                    double h2s = (double)h2*h2; //square
                     double h3s = (double)h3*h3;
 
                     float d_vt = ((h3s-h2s)*vt1 - h3s*vt2+h2s*vt3) / (h3*h2s-h2*h3s);
@@ -250,6 +276,14 @@ void computeDTangentVelocity(vtkSmartPointer<vtkMultiPieceDataSet> mb, char *out
                     out_normal_array->InsertNextTuple3(n2[0], n2[1], n2[2]);
                     out_vel_array->InsertNextTuple3(cvel2[0], cvel2[1], cvel2[2]);
                     out_dvt_array->InsertNextTuple(&d_vt);
+
+#ifdef DVT_VERBOSE
+                    out_vt1_array->InsertNextTuple(&vt1);
+                    out_vt2_array->InsertNextTuple(&vt2);
+                    out_vt3_array->InsertNextTuple(&vt3);
+                    out_h2_array->InsertNextTuple(&h2);
+                    out_h3_array->InsertNextTuple(&h3);
+#endif
 
                 }
         }
@@ -275,6 +309,13 @@ void computeDTangentVelocity(vtkSmartPointer<vtkMultiPieceDataSet> mb, char *out
     poly->GetPointData()->SetVectors(out_vel_array.GetPointer());
     poly->GetPointData()->SetNormals(out_normal_array.GetPointer());
     poly->GetPointData()->SetScalars(out_dvt_array.GetPointer());
+#ifdef DVT_VERBOSE
+    poly->GetPointData()->AddArray(out_vt1_array.GetPointer());
+    poly->GetPointData()->AddArray(out_vt2_array.GetPointer());
+    poly->GetPointData()->AddArray(out_vt3_array.GetPointer());
+    poly->GetPointData()->AddArray(out_h2_array.GetPointer());
+    poly->GetPointData()->AddArray(out_h3_array.GetPointer());
+#endif
     poly->SetPolys(out_quad_array.GetPointer());
 
 

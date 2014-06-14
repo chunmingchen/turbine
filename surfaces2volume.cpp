@@ -40,8 +40,8 @@
 #include "VectorMatrix.h"
 
 
-int dim[3]={150, 70, 36};
-int xstart=77;
+int dim[3]={150, 70, 36}; // -1 from the original sizes
+const int xstart=40, xend=120;
 
 void run(char *list_fname)
 {
@@ -87,7 +87,7 @@ void run(char *list_fname)
         int x,y,z;
         for (z=0; z<dim[2]; z++)
             for (y=0 ;y<dim[1]; y++)
-                for (x=xstart; x<dim[0]; x++)
+                for (x=xstart; x<xend; x++)
                 {
                     int idx = x+dim[0]*(y+dim[1]*z);
                     out_ary.push_back(p[idx]);

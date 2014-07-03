@@ -437,7 +437,7 @@ void computeParVel_simple(vtkSmartPointer<vtkMultiPieceDataSet> mb, int layer_id
 
 int main(int argc, char **argv)
 {
-	printf("usage: filename layer_id output_filename\n");
+    printf("usage: input_filename  output_filename\n");
     char *filename = argv[1];
     char *out_filename = argv[2];
 

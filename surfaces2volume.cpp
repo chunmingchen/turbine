@@ -15,6 +15,7 @@
 #include <map>
 #include <assert.h>
 #include <system/path.h>
+#include <file/nrrd.h>
 
 // VTK#include <vtkFloatArray.h>
 #include <vtkPointData.h>
@@ -84,14 +85,20 @@ void run(char *list_fname)
         int n = data->GetNumberOfPoints();
 
         vector<float> out_ary;
-        int x,y,z;
-        for (z=0; z<dim[2]; z++)
+        int x,y,b;
+        for (b=0; b<dim[2]; b++)
+        {
             for (y=0 ;y<dim[1]; y++)
                 for (x=xstart; x<xend; x++)
                 {
-                    int idx = x+dim[0]*(y+dim[1]*z);
+                    int idx = x+dim[0]*(y+dim[1]*b);
                     out_ary.push_back(p[idx]);
                 }
+
+            // separater
+            for (x=xstart; x<xend; x++)
+                out_ary.push_back(NAN);
+        }
 
 
         //printf("n=%d\n", n);
@@ -101,6 +108,7 @@ void run(char *list_fname)
         fwrite(&out_ary[0], out_ary.size(), sizeof(float), fout);
 
     }
+    write_nrrd_3d("out.nrrd", "out.raw", xend-xstart, (dim[1]+1)*dim[2], files, "float");
 
     fclose(fout);
     fclose(fp);

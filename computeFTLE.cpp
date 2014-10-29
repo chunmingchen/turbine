@@ -47,14 +47,15 @@ int main(int argc, char **argv)
 
 
 	// FTLE
-	vector<float> ftle(w*h*d);
+    vector<float> ftle(w*h*d);
 	int x,y,z, count=0;
 	for (z=0; z<d; z++)
 	{
 		for (y=0; y<h; y++)
 			for (x=0; x<w; x++)
 			{
-				MATRIX3 jac = field->Jacobian(VECTOR3(x,y,z)), jsquare; // TODO: delta in Jac. computation
+                MATRIX3 jac = field->Jacobian(VECTOR3(x,y,z)),
+                        jsquare; // TODO: delta in Jac. computation
 				jac = jac * (1/RES);
 				jsquare = jac.transpose() * jac;
 

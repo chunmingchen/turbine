@@ -16,6 +16,7 @@
 #include <assert.h>
 #include <system/path.h>
 #include <file/nrrd.h>
+#include <macros.h>
 
 // VTK#include <vtkFloatArray.h>
 #include <vtkPointData.h>
@@ -37,12 +38,23 @@
 #include <vtkFloatArray.h>
 #include <vtkCellArray.h>
 #include <vtkQuad.h>
+#include <vtkPoints.h>
+#include <vtkXMLPolyDataWriter.h>
 
 #include "VectorMatrix.h"
 
 
+//run: ~/Project/turbine/build/surfaces2volume surface.dvt.list
+#define EXTRACT_SURFACE
+
 int dim[3]={150, 70, 36}; // -1 from the original sizes
-const int xstart=40, xend=120;
+const int xstart=40, xend=105; // end not included
+const int ystart=10, yend=60;
+
+inline int xyz_id_surface(int x, int y, int b)
+{
+    return (x-xstart)+(xend-xstart)*(y-ystart + (yend-ystart)*b);
+}
 
 void run(char *list_fname)
 {
@@ -56,6 +68,7 @@ void run(char *list_fname)
     int i;
 
     FILE *fout = fopen("out.raw", "wb");
+    FILE *fstat = fopen("count.txt", "wt");
 
     for (i=0; i<files; i++)
     {
@@ -80,38 +93,76 @@ void run(char *list_fname)
             printf("cannot get d_tangent_vel\n");
             exit(1);
         }
+#ifdef EXTRACT_SURFACE
+        vtkNew<vtkPoints> pointAry;
+        vtkNew<vtkCellArray> cellAry;
+#endif
 
         float *p = (float *)dvt_ary->GetVoidPointer(0);
         int n = data->GetNumberOfPoints();
 
-        vector<float> out_ary;
+        //vector<float> out_ary;
+        vtkNew<vtkFloatArray> out_ary;
+        out_ary->SetName("d_tangent_vel");
         int x,y,b;
         for (b=0; b<dim[2]; b++)
         {
-            for (y=0 ;y<dim[1]; y++)
+            int count=0;
+            for (y=ystart ;y<yend; y++)
                 for (x=xstart; x<xend; x++)
                 {
                     int idx = x+dim[0]*(y+dim[1]*b);
-                    out_ary.push_back(p[idx]);
+                    out_ary->InsertNextTuple1(p[idx]);
+                    if (p[idx] < 0)
+                        count ++;
+#ifdef EXTRACT_SURFACE
+                    pointAry->InsertNextPoint(data->GetPoint(idx));
+                    if (x>xstart && y>ystart) {
+                        vtkNew<vtkQuad> quad;
+                        quad->GetPointIds()->SetId(0, xyz_id_surface(x-1,y-1,b) );
+                        quad->GetPointIds()->SetId(1, xyz_id_surface(x,y-1,b) );
+                        quad->GetPointIds()->SetId(2, xyz_id_surface(x,y,b) );
+                        quad->GetPointIds()->SetId(3, xyz_id_surface(x-1,y,b) );
+                        cellAry->InsertNextCell(quad.GetPointer());
+                    }
+#endif
                 }
 
-            // separater
-            for (x=xstart; x<xend; x++)
-                out_ary.push_back(NAN);
+            //printf("t=%d, b=%d, count=%d\n", i, b, count);
+            if (b==dim[2]-1)
+                fprintf(fstat, "%d\n", count);
+            else
+                fprintf(fstat, "%d, ", count);
+            //// separater
+            //for (x=xstart; x<xend; x++)
+            //    out_ary.push_back(1e+30);
         }
 
 
         //printf("n=%d\n", n);
         // fwrite(p, n, sizeof(float), fout);
 
-        printf("i=%d, count=%d\n", i, out_ary.size());
-        fwrite(&out_ary[0], out_ary.size(), sizeof(float), fout);
-
+        printf("i=%d, count=%d\n", i, out_ary->GetNumberOfTuples());
+        fwrite(out_ary->GetVoidPointer(0), out_ary->GetNumberOfTuples(), sizeof(float), fout);
+#ifdef EXTRACT_SURFACE
+        vtkNew<vtkPolyData> polyout;
+        polyout->SetPoints(pointAry.GetPointer());
+        polyout->GetPointData()->AddArray(out_ary.GetPointer());
+        polyout->SetPolys(cellAry.GetPointer());
+        string filename = JCLib::strprintf("surfaces.extract.dvt.%d.vtp", i);
+        vtkNew<vtkXMLPolyDataWriter> writer;
+        writer->SetInputData(polyout.GetPointer());
+        //writer->SetCompressorTypeToZLib();
+        writer->SetFileName(filename.c_str());
+        writer->Write();
+#endif
     }
-    write_nrrd_3d("out.nrrd", "out.raw", xend-xstart, (dim[1]+1)*dim[2], files, "float");
+    write_nrrd_3d("out.nrrd", "out.raw", xend-xstart, (yend-ystart)*dim[2], files, "float");
+    printf("Output: out.nrrd, out.raw\n");
 
     fclose(fout);
     fclose(fp);
+    fclose(fstat);
 
 }
 

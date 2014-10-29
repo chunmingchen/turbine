@@ -6,8 +6,11 @@ include(${VTK_USE_FILE})
 
 set(OSUFLOW_DIR "/usr/local/osuflow" CACHE PATH "OSUFlow dir")
 set(JCLIB_DIR "${CMAKE_SOURCE_DIR}/lib/jclib/" CACHE PATH "JCLib dir")
-set(OSUFLOW_INCLUDE_DIR "${OSUFLOW_DIR}/include")
-set(OSUFLOW_LIB_DIR "${OSUFLOW_DIR}/lib")
+set(OSUFLOW_INCLUDE_DIR "${OSUFLOW_DIR}/include/osuflow")
+set(OSUFLOW_LIB_DIR "${OSUFLOW_DIR}/lib/osuflow")
+
+set(DATA_DIR "/data" CACHE PATH "Directory to PLOT3D data")
+add_definitions(-DDATA_DIR=\"${DATA_DIR}/\")
 
 # OpenMP
 #find_package(OpenMP)
@@ -27,16 +30,16 @@ include_directories(${OSUFLOW_INCLUDE_DIR} ${OSUFLOW_INCLUDE_DIR}/VTK
 link_directories(${OSUFLOW_LIB_DIR} ${JCLIB_DIR})
 
 #add_executable(StreamlineRenderPlot3D StreamlineRenderPlot3D.cpp)
-#target_link_libraries( StreamlineRenderPlot3D  OSUFlowVTK OSUFlow_r ${VTK_LIBRARIES})
+#target_link_libraries( StreamlineRenderPlot3D  OSUFlowVTK OSUFlow ${VTK_LIBRARIES})
 
 add_executable(StreamlineRenderUnstructured StreamlineRenderUnstructured.cpp)
-target_link_libraries( StreamlineRenderUnstructured  OSUFlowVTK OSUFlow_r ${VTK_LIBRARIES})
+target_link_libraries( StreamlineRenderUnstructured  OSUFlowVTK OSUFlow ${VTK_LIBRARIES})
 
 add_executable(streamline streamline.cpp)
-target_link_libraries( streamline  OSUFlowVTK OSUFlow_r ${VTK_LIBRARIES})
+target_link_libraries( streamline  OSUFlowVTK OSUFlow ${VTK_LIBRARIES})
 
 add_executable(computeFTLE computeFTLE.cpp)
-target_link_libraries( computeFTLE   OSUFlow_r)
+target_link_libraries( computeFTLE   OSUFlow)
 
 add_executable(regular_sampling regular_sampling.cpp)
 target_link_libraries( regular_sampling ${VTK_LIBRARIES} )
@@ -50,14 +53,19 @@ add_executable(stat stat.cpp)
 target_link_libraries( stat ${VTK_LIBRARIES} )
 
 add_executable(stat_raw stat_raw.cpp)
-target_link_libraries( stat_raw ${VTK_LIBRARIES} jclib OSUFlow_r)
+target_link_libraries( stat_raw ${VTK_LIBRARIES} jclib OSUFlow)
 
 add_executable(surfaces2volume surfaces2volume.cpp)
-target_link_libraries( surfaces2volume ${VTK_LIBRARIES} jclib OSUFlow_r)
+target_link_libraries( surfaces2volume ${VTK_LIBRARIES} jclib OSUFlow)
 
 add_executable(VortexDetector VortexDetector.C)
-target_link_libraries( VortexDetector  OSUFlowVTK OSUFlow_r ${VTK_LIBRARIES} jclib)
+target_link_libraries( VortexDetector  OSUFlowVTK OSUFlow ${VTK_LIBRARIES} jclib)
 
 add_executable(test_vtkopengl test_vtkopengl.cpp)
-target_link_libraries( test_vtkopengl  OSUFlow_r OSUFlowVTK ${VTK_LIBRARIES} )
+target_link_libraries( test_vtkopengl  OSUFlow OSUFlowVTK ${VTK_LIBRARIES} )
 
+add_executable(vts_vortex_merge vts_vortex_merge.cpp)
+target_link_libraries( vts_vortex_merge  ${VTK_LIBRARIES} )
+
+add_executable(pressure_probe pressure_probe.cpp)
+target_link_libraries( pressure_probe ${VTK_LIBRARIES} )

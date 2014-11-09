@@ -67,5 +67,5 @@ target_link_libraries( test_vtkopengl  OSUFlow OSUFlowVTK ${VTK_LIBRARIES} )
 add_executable(vts_vortex_merge vts_vortex_merge.cpp)
 target_link_libraries( vts_vortex_merge  ${VTK_LIBRARIES} )
 
-add_executable(pressure_probe pressure_probe.cpp)
-target_link_libraries( pressure_probe ${VTK_LIBRARIES} )
+#add_executable(pressure_probe pressure_probe.cpp)
+#target_link_libraries( pressure_probe ${VTK_LIBRARIES} )

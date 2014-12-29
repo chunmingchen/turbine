@@ -49,7 +49,7 @@
 
 int dim[3]={150, 70, 36}; // -1 from the original sizes
 const int xstart=40, xend=105; // end not included
-const int ystart=10, yend=56; //60
+const int ystart=1, yend=60; // hub to tip
 
 inline int xyz_id_surface(int x, int y, int b)
 {

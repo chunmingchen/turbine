@@ -58,6 +58,9 @@ target_link_libraries( stat_raw ${VTK_LIBRARIES} jclib OSUFlow)
 add_executable(surfaces2volume surfaces2volume.cpp)
 target_link_libraries( surfaces2volume ${VTK_LIBRARIES} jclib OSUFlow)
 
+add_executable(flowsepcount flowsepcount.cpp)
+target_link_libraries( flowsepcount ${VTK_LIBRARIES} jclib )
+
 add_executable(VortexDetector VortexDetector.C)
 target_link_libraries( VortexDetector  OSUFlowVTK OSUFlow ${VTK_LIBRARIES} jclib)
 

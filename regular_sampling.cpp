@@ -42,20 +42,20 @@
 
 using namespace std;
 
-#define DATA_PATH "./" //"/data/flow2/Stg37/"
+#define DATA_PATH "/data/turbine_Stg/s35_noinj_13.80_141219_turb_6201-20601"
 //#define DATA_PATH "/data/turbine_Stg/zDIR.P3D.rel.6201-11001"
 
 vtkLineWidget *lineWidget;
 vtkRenderWindow *renWin;
 vtkPolyData *seeds ;
 
-vtkSmartPointer<vtkMultiPieceDataSet> load_list(char *list_fname)
+vtkSmartPointer<vtkMultiPieceDataSet> load_list(int t)
 {
 	//char list_filename[1024];
 	//sprintf(list_filename, "%s/list", DATA_PATH);
-	FILE *fp = fopen(list_fname, "rt");
+    //FILE *fp = fopen(list_fname, "rt");
 	char s[1024];
-	fgets(s, 1024, fp);
+    //fgets(s, 1024, fp);
 
 	int blocks = atoi(s);
 	int i;
@@ -64,12 +64,18 @@ vtkSmartPointer<vtkMultiPieceDataSet> load_list(char *list_fname)
 	for (i=0; i<blocks; i++)
 	{
 		char file1[1024], file2[1024]; // q, xyz
+#if 0
 		fgets(s, 1024, fp);
 		*strchr(s, '\n')=0; // remove the last new-line
 		sprintf(file1, "%s/%s", DATA_PATH, s);
 		fgets(s, 1024, fp);
 		*strchr(s, '\n')=0; // remove the last new-line
 		sprintf(file2, "%s/%s", DATA_PATH, s);
+#else
+        int id = t*25+6201;
+        sprintf(file1, "%s/s35_noinj.r1b10.p3d.g%d", DATA_PATH, id);
+        sprintf(file2, "%s/s35_noinj.r1b10.p3d.q%d", DATA_PATH, id);
+#endif
 		printf("xyz: [%s]   q: [%s]\n", file1, file2);
 
 		// Start by loading some data.
@@ -136,13 +142,13 @@ struct float3 {float x,y,z;};
 
 int main(int argc, char **argv)
 {
-	printf("Usage: convertVTK <list file> <output>\n");
+    printf("Usage: convertVTK <timestep_0base>\n");
 
     // compressor
     vtkSmartPointer<vtkDataCompressor> compressor = vtkZLibDataCompressor::New();
 
 	// load data
-	vtkSmartPointer<vtkMultiPieceDataSet> mb = load_list(argv[1]);
+    vtkSmartPointer<vtkMultiPieceDataSet> mb = load_list(atoi(argv[1]));
 
 	// resample
 	int extent[3];

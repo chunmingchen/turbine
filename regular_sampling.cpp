@@ -60,7 +60,7 @@ vtkSmartPointer<vtkMultiPieceDataSet> load_list(int t)
 
     int blocks = 36;
 	int i;
-	vtkSmartPointer<vtkMultiPieceDataSet> mb = vtkMultiPieceDataSet::New();
+    vtkSmartPointer<vtkMultiPieceDataSet> mb = vtkSmartPointer<vtkMultiPieceDataSet>::New();
 
 	for (i=0; i<blocks; i++)
 	{
@@ -113,6 +113,7 @@ vtkSmartPointer<vtkMultiPieceDataSet> load_list(int t)
 
 		//extract uvel
 		//<
+        printf("Extracing uvel...\n");
 		vtkSmartPointer<vtkFloatArray> uvel = vtkSmartPointer<vtkFloatArray>::New();
 		uvel->SetName("Uvel");
 
@@ -129,6 +130,7 @@ vtkSmartPointer<vtkMultiPieceDataSet> load_list(int t)
 			 	uvel->InsertTuple1(p,datavalue);
 			}
 	    current_data->GetPointData()->AddArray(uvel);
+        printf("Done extracting uvel\n");
 	    //>
 
 	    mb->SetPiece(i, current_data);
@@ -186,7 +188,7 @@ void run(int t)
     resampler->SpatialMatchOn();
     resampler->Update();
 
-    resampler->GetOutput()->PrintSelf(cout, (vtkIndent)0);
+    //resampler->GetOutput()->PrintSelf(cout, (vtkIndent)0);
 
     vtkImageData *output = vtkImageData::SafeDownCast(resampler->GetOutput());
 
@@ -196,7 +198,8 @@ void run(int t)
     imw->SetFileName(filename);
     imw->SetDataModeToBinary();
     imw->SetInputData(output);
-    imw->SetCompressor(compressor);
+    //imw->SetInputConnection(resampler.GetPointer());
+    imw->SetCompressor(compressor.GetPointer());
     imw->Write();
 
 }

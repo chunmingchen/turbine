@@ -13,9 +13,9 @@ set(DATA_DIR "/data" CACHE PATH "Directory to PLOT3D data")
 add_definitions(-DDATA_DIR=\"${DATA_DIR}/\")
 
 # OpenMP
-#find_package(OpenMP)
-#set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+find_package(OpenMP)
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 
 
 # convertVTK

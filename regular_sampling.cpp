@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cmath>
+#include <iostream>
 
 #include <list>
 #include <iterator>
@@ -42,7 +43,7 @@
 
 using namespace std;
 
-#define DATA_PATH "/data/turbine_Stg/s35_noinj_13.80_141219_turb_6201-20601"
+#define DATA_PATH DATA_DIR //"/data/turbine_Stg/s35_noinj_13.80_141219_turb_6201-20601"
 //#define DATA_PATH "/data/turbine_Stg/zDIR.P3D.rel.6201-11001"
 
 vtkLineWidget *lineWidget;
@@ -57,7 +58,7 @@ vtkSmartPointer<vtkMultiPieceDataSet> load_list(int t)
 	char s[1024];
     //fgets(s, 1024, fp);
 
-	int blocks = atoi(s);
+    int blocks = 36;
 	int i;
 	vtkSmartPointer<vtkMultiPieceDataSet> mb = vtkMultiPieceDataSet::New();
 
@@ -73,8 +74,8 @@ vtkSmartPointer<vtkMultiPieceDataSet> load_list(int t)
 		sprintf(file2, "%s/%s", DATA_PATH, s);
 #else
         int id = t*25+6201;
-        sprintf(file1, "%s/s35_noinj.r1b10.p3d.g%d", DATA_PATH, id);
-        sprintf(file2, "%s/s35_noinj.r1b10.p3d.q%d", DATA_PATH, id);
+        sprintf(file1, "%s/s35_noinj.r2b%d.p3d.g%d", DATA_PATH, i+1, id);
+        sprintf(file2, "%s/s35_noinj.r2b%d.p3d.q%d", DATA_PATH, i+1, id);
 #endif
 		printf("xyz: [%s]   q: [%s]\n", file1, file2);
 
@@ -88,7 +89,7 @@ vtkSmartPointer<vtkMultiPieceDataSet> load_list(int t)
 
 	    reader->AddFunction(100); //density
 	    reader->AddFunction(110); //pressure
-	    reader->AddFunction(120); //temp
+        //reader->AddFunction(120); //temp
 	    //reader->AddFunction(130); //enthalpy
 	    //reader->AddFunction(140); //internal energy
 	    //reader->AddFunction(144); //kinetic energy
@@ -96,7 +97,7 @@ vtkSmartPointer<vtkMultiPieceDataSet> load_list(int t)
 	    //reader->AddFunction(163); //stagnation energy
 	    reader->AddFunction(170); //entropy
 	    //reader->AddFunction(184); //swirl
-	    reader->AddFunction(211); //vorticity magnitude
+        //reader->AddFunction(211); //vorticity magnitude
 
 	    //available vector fields in the data
 	    reader->AddFunction(200); //velocity
@@ -107,6 +108,8 @@ vtkSmartPointer<vtkMultiPieceDataSet> load_list(int t)
 
 	    reader->Update();
 		vtkDataSet *current_data = vtkDataSet::SafeDownCast(reader->GetOutput()->GetBlock(0));
+
+        //cout << current_data->GetNumberOfPoints() << endl;
 
 		//extract uvel
 		//<
@@ -135,17 +138,82 @@ vtkSmartPointer<vtkMultiPieceDataSet> load_list(int t)
 	return mb;
 }
 
-float RES = .005;
+float RES = .01; //.005;
 float datamin[3] = {-0.083, -0.509, -0.509};
 float datamax[3] = {0.0914, 0.509, 0.509};
 struct float3 {float x,y,z;};
 
+void run(int t)
+{
+    // compressor
+    vtkSmartPointer<vtkDataCompressor> compressor = vtkSmartPointer<vtkZLibDataCompressor>::New();
+
+    // load data
+    vtkSmartPointer<vtkMultiPieceDataSet> mb = load_list(t);
+
+    // resample
+    int extent[3];
+    int d,i,j,k, b;
+
+    // set interpolator
+
+
+    for (d=0; d<3; d++)
+        extent[d] = (datamax[d]-datamin[d])/RES+1;
+    printf("Extent: %d %d %d\n", extent[0], extent[1], extent[2]);
+
+
+    vtkSmartPointer<vtkImageData> samplingArray = vtkSmartPointer<vtkImageData>::New();
+    //samplingArray->SetNumberOfScalarComponents(1);
+    //samplingArray->SetScalarType(VTK_FLOAT);
+    samplingArray->SetSpacing(RES, RES, RES);
+    samplingArray->SetDimensions(extent[0], extent[1], extent[2]);
+    double origin[3];
+    origin[0] = (double)datamin[0];
+    origin[1] = (double)datamin[1];
+    origin[2] = (double)datamin[2];
+    samplingArray->SetOrigin( origin );
+    samplingArray->AllocateScalars(VTK_FLOAT,1);
+    samplingArray->ComputeBounds();
+    double *bounds = samplingArray->GetBounds();
+    printf("output bounds: %f %f %f %f %f %f\n", bounds[0], bounds[1], bounds[2], bounds[3], bounds[4], bounds[5]);
+    //bounds = vtkDataSet::SafeDownCast(mb->GetBlock(0))->GetBounds();
+    //printf("input bounds: %f %f %f %f %f %f\n", bounds[0], bounds[1], bounds[2], bounds[3], bounds[4], bounds[5]);
+
+    vtkSmartPointer<vtkCompositeDataProbeFilter> resampler = vtkSmartPointer<vtkCompositeDataProbeFilter>::New();
+    resampler->SetSourceData(mb);
+    resampler->SetInputData(samplingArray);
+    resampler->SpatialMatchOn();
+    resampler->Update();
+
+    resampler->GetOutput()->PrintSelf(cout, (vtkIndent)0);
+
+    vtkImageData *output = vtkImageData::SafeDownCast(resampler->GetOutput());
+
+    char filename[256];
+    sprintf(filename, "regular_r%g_%d.vti", RES, t);
+    vtkNew<vtkXMLImageDataWriter> imw;
+    imw->SetFileName(filename);
+    imw->SetDataModeToBinary();
+    imw->SetInputData(output);
+    imw->SetCompressor(compressor);
+    imw->Write();
+
+}
+
+
 int main(int argc, char **argv)
 {
+#pragma omp parallel for
+    for (int i=0; i<576; i++)
+    {
+        run (i);
+    }
+#if 0
     printf("Usage: convertVTK <timestep_0base>\n");
 
     // compressor
-    vtkSmartPointer<vtkDataCompressor> compressor = vtkZLibDataCompressor::New();
+    vtkSmartPointer<vtkDataCompressor> compressor = vtkSmartPointer<vtkZLibDataCompressor>::New();
 
 	// load data
     vtkSmartPointer<vtkMultiPieceDataSet> mb = load_list(atoi(argv[1]));
@@ -163,7 +231,7 @@ int main(int argc, char **argv)
 
 #if 1
 
-	vtkSmartPointer<vtkImageData> samplingArray = vtkImageData::New();
+    vtkSmartPointer<vtkImageData> samplingArray = vtkSmartPointer<vtkImageData>::New();
 	//samplingArray->SetNumberOfScalarComponents(1);
 	//samplingArray->SetScalarType(VTK_FLOAT);
 	samplingArray->SetSpacing(RES, RES, RES);
@@ -180,22 +248,24 @@ int main(int argc, char **argv)
 	//bounds = vtkDataSet::SafeDownCast(mb->GetBlock(0))->GetBounds();
 	//printf("input bounds: %f %f %f %f %f %f\n", bounds[0], bounds[1], bounds[2], bounds[3], bounds[4], bounds[5]);
 
-	vtkSmartPointer<vtkCompositeDataProbeFilter> resampler = vtkCompositeDataProbeFilter::New();
+    vtkSmartPointer<vtkCompositeDataProbeFilter> resampler = vtkSmartPointer<vtkCompositeDataProbeFilter>::New();
 	resampler->SetSourceData(mb);
 	resampler->SetInputData(samplingArray);
 	resampler->SpatialMatchOn();
 	resampler->Update();
 
-	vtkSmartPointer<vtkImageData> output = vtkImageData::SafeDownCast(resampler->GetOutput());
+    resampler->GetOutput()->PrintSelf(cout, (vtkIndent)0);
+
+    vtkImageData *output = vtkImageData::SafeDownCast(resampler->GetOutput());
 
 	char filename[256];
-	sprintf(filename, "%s_r%g.vti", argv[1], RES);
+    sprintf(filename, "regular_%s_r%g.vti", argv[1], RES);
 	vtkNew<vtkXMLImageDataWriter> imw;
 	imw->SetFileName(filename);
 	imw->SetDataModeToBinary();
 	imw->SetInputData(output);
 	imw->SetCompressor(compressor);
-	imw->Write();
+    imw->Write();
 #if 0
 	//vtkImageData *image = vtkImageData::New();
 	//image->DeepCopy(resampler->GetImageDataOutput());
@@ -320,6 +390,7 @@ int main(int argc, char **argv)
 	mbw->SetInputData(mb.GetPointer());
     mbw->SetCompressor(compressor);
 	mbw->Write();
+#endif
 #endif
 
 	return 0;

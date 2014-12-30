@@ -204,7 +204,7 @@ void run(int t)
 
 int main(int argc, char **argv)
 {
-#pragma omp parallel for
+#pragma omp parallel for schedule(static, 1)
     for (int i=0; i<576; i++)
     {
         run (i);

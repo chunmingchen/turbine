@@ -43,7 +43,8 @@
 
 using namespace std;
 
-#define DATA_PATH DATA_DIR //"/data/turbine_Stg/s35_noinj_13.80_141219_turb_6201-20601"
+#define DATA_PATH DATA_DIR 
+//"/data/turbine_Stg/s35_noinj_13.80_141219_turb_6201-20601"
 //#define DATA_PATH "/data/turbine_Stg/zDIR.P3D.rel.6201-11001"
 
 vtkLineWidget *lineWidget;
@@ -140,7 +141,7 @@ vtkSmartPointer<vtkMultiPieceDataSet> load_list(int t)
 	return mb;
 }
 
-float RES = .01; //.005;
+float RES = .001;
 float datamin[3] = {-0.083, -0.509, -0.509};
 float datamax[3] = {0.0914, 0.509, 0.509};
 struct float3 {float x,y,z;};
@@ -194,6 +195,7 @@ void run(int t)
 
     char filename[256];
     sprintf(filename, "regular_r%g_%d.vti", RES, t);
+    printf("Save file: %s\n", filename);
     vtkNew<vtkXMLImageDataWriter> imw;
     imw->SetFileName(filename);
     imw->SetDataModeToBinary();
@@ -207,7 +209,7 @@ void run(int t)
 
 int main(int argc, char **argv)
 {
-#pragma omp parallel for schedule(static, 1)
+//#pragma omp parallel for schedule(static, 1)
     for (int i=0; i<576; i++)
     {
         run (i);

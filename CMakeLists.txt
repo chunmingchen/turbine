@@ -1,13 +1,18 @@
 cmake_minimum_required (VERSION 2.8)
 project (Turbine)
 
-FIND_PACKAGE(VTK REQUIRED)
-include(${VTK_USE_FILE})
+#FIND_PACKAGE(VTK REQUIRED)
+#include(${VTK_USE_FILE})
 
-set(OSUFLOW_DIR "/usr/local/osuflow" CACHE PATH "OSUFlow dir")
+find_package(osuflow)
+
+#set(OSUFLOW_DIR "/usr/local/osuflow" CACHE PATH "OSUFlow dir")
 set(JCLIB_DIR "${CMAKE_SOURCE_DIR}/lib/jclib/" CACHE PATH "JCLib dir")
-set(OSUFLOW_INCLUDE_DIR "${OSUFLOW_DIR}/include/osuflow")
-set(OSUFLOW_LIB_DIR "${OSUFLOW_DIR}/lib/osuflow")
+#set(OSUFLOW_INCLUDE_DIR "${OSUFLOW_DIR}/include/osuflow")
+#set(OSUFLOW_LIB_DIR "${OSUFLOW_DIR}/lib/osuflow")
+
+include_directories(${JCLIB_DIR})
+link_directories(${JCLIB_DIR})
 
 set(DATA_DIR "/data" CACHE PATH "Directory to PLOT3D data")
 add_definitions(-DDATA_DIR=\"${DATA_DIR}/\")
@@ -25,21 +30,21 @@ target_link_libraries( convertVTK ${VTK_LIBRARIES} )
 
 ## streamline render
 
-include_directories(${OSUFLOW_INCLUDE_DIR} ${OSUFLOW_INCLUDE_DIR}/VTK
-    ${JCLIB_DIR})
-link_directories(${OSUFLOW_LIB_DIR} ${JCLIB_DIR})
+#include_directories(${OSUFLOW_INCLUDE_DIR} ${OSUFLOW_INCLUDE_DIR}/VTK
+#    ${JCLIB_DIR})
+#link_directories(${OSUFLOW_LIB_DIR} ${JCLIB_DIR})
 
 #add_executable(StreamlineRenderPlot3D StreamlineRenderPlot3D.cpp)
 #target_link_libraries( StreamlineRenderPlot3D  OSUFlowVTK OSUFlow ${VTK_LIBRARIES})
 
 add_executable(StreamlineRenderUnstructured StreamlineRenderUnstructured.cpp)
-target_link_libraries( StreamlineRenderUnstructured  OSUFlowVTK OSUFlow ${VTK_LIBRARIES})
+target_link_libraries( StreamlineRenderUnstructured ${osuflow_LIBRARIES} ${VTK_LIBRARIES})
 
 add_executable(streamline streamline.cpp)
-target_link_libraries( streamline  OSUFlowVTK OSUFlow ${VTK_LIBRARIES})
+target_link_libraries( streamline  ${osuflow_LIBRARIES} ${VTK_LIBRARIES})
 
 add_executable(computeFTLE computeFTLE.cpp)
-target_link_libraries( computeFTLE   OSUFlow)
+target_link_libraries( computeFTLE   ${osuflow_LIBRARIES})
 
 add_executable(regular_sampling regular_sampling.cpp)
 target_link_libraries( regular_sampling ${VTK_LIBRARIES} )
@@ -53,22 +58,28 @@ add_executable(stat stat.cpp)
 target_link_libraries( stat ${VTK_LIBRARIES} )
 
 add_executable(stat_raw stat_raw.cpp)
-target_link_libraries( stat_raw ${VTK_LIBRARIES} jclib OSUFlow)
+target_link_libraries( stat_raw ${VTK_LIBRARIES} jclib ${osuflow_LIBRARIES})
 
 add_executable(surfaces2volume surfaces2volume.cpp)
-target_link_libraries( surfaces2volume ${VTK_LIBRARIES} jclib OSUFlow)
+target_link_libraries( surfaces2volume ${VTK_LIBRARIES} jclib ${osuflow_LIBRARIES})
 
 add_executable(flowsepcount flowsepcount.cpp)
 target_link_libraries( flowsepcount ${VTK_LIBRARIES} jclib )
 
 add_executable(VortexDetector VortexDetector.C)
-target_link_libraries( VortexDetector  OSUFlowVTK OSUFlow ${VTK_LIBRARIES} jclib)
+target_link_libraries( VortexDetector  ${osuflow_LIBRARIES} ${VTK_LIBRARIES} jclib)
 
-add_executable(test_vtkopengl test_vtkopengl.cpp)
-target_link_libraries( test_vtkopengl  OSUFlow OSUFlowVTK ${VTK_LIBRARIES} )
+#add_executable(test_vtkopengl test_vtkopengl.cpp)
+#target_link_libraries( test_vtkopengl  ${osuflow_LIBRARIES} ${VTK_LIBRARIES} )
 
 add_executable(vts_vortex_merge vts_vortex_merge.cpp)
 target_link_libraries( vts_vortex_merge  ${VTK_LIBRARIES} )
 
 #add_executable(pressure_probe pressure_probe.cpp)
 #target_link_libraries( pressure_probe ${VTK_LIBRARIES} )
+
+add_executable(extractVariables extractvariables.cpp)
+target_link_libraries( extractVariables  ${VTK_LIBRARIES} jclib)
+
+add_executable(convertUnstructured convertunstructured.cpp)
+target_link_libraries( convertUnstructured  ${VTK_LIBRARIES} )

@@ -1,4 +1,4 @@
-filepath = '/data/flow2/turbine_Stg/s35_noinj_14.20_13.80_150127_regular_sampled/raw/'
+filepath = '/media/chenchu/TEMP/14.20_13.80_raw/'
 filepattern = '14.2-13.8-turbine_%d.vti_Pressure_slice44.raw'
 nfiles = 576
 period = 144

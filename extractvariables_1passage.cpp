@@ -31,23 +31,32 @@
 
 #define vsp_new(type, x) vtkSmartPointer<type> x = vtkSmartPointer<type>::New()
 
-const int VARS=8;
-const char *var_list[] = {"Pressure", "Entropy", "Density", "Lambda2", "Temperature", "Uvel", "VelocityMagnitude", "vtkValidPointMask"}; //, "Entropy"};
+const int VARS=1;
+const char *var_list[VARS] = {"Pressure"}; //, "Entropy"};
 
 
 int main(int argc, const char **argv)
 {
   CmdArgReader::init(argc, argv, "-slice=-1");
 
-  printf("Usage: <vti filename> -slice=<x slice idx>\n");
-  vsp_new(vtkXMLImageDataReader, reader);
-  reader->SetFileName(argv[1]);
-  reader->Update();
-  vtkImageData *image = vtkImageData::SafeDownCast( reader->GetOutput() );
-  vtkPointData *data = image->GetPointData();
+  printf("Usage: <xyz filename> <q filename> -slice=<x slice idx>\n");
+  vsp_new(vtkMultiBlockPLOT3DReader, pl3dReader);
+  pl3dReader->SetXYZFileName(argv[1]);
+  pl3dReader->SetQFileName(argv[2]);
+  pl3dReader->SetScalarFunctionNumber(100);
+  pl3dReader->SetVectorFunctionNumber(200);
+  pl3dReader->SetAutoDetectFormat(1);
+
+  pl3dReader->AddFunction(110); //Pressure
+  // ************* add more functions if needed **********
+
+  pl3dReader->Update();
+
+  vtkStructuredGrid *sdata = vtkStructuredGrid::SafeDownCast( pl3dReader->GetOutput()->GetBlock(0) );
+  vtkPointData *data = sdata->GetPointData();
 
   // get ext
-  const int *dim = image->GetDimensions();
+  const int *dim = sdata->GetDimensions();
   printf("Extent: %d %d %d\n", dim[0], dim[1], dim[2]);
 
   int slice = GET_ARG_INT("slice");
@@ -77,7 +86,7 @@ int main(int argc, const char **argv)
     int iend = (slice>=0)? slice+1: dim[0];
     for (kk=0; kk<dim[2]; kk++)
       for (jj=0; jj<dim[1]; jj++)
-        for (ii=istart; ii<iend; ii++)
+        for (ii=istart; ii<iend; ii++)  // slice of i
         {
           int idx = ii+dim[0]*(jj+dim[1]*kk);
           float x = (float)array->GetTuple1(idx);

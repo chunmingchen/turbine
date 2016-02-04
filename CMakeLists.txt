@@ -1,17 +1,19 @@
 cmake_minimum_required (VERSION 2.8)
 project (Turbine)
 
-#FIND_PACKAGE(VTK REQUIRED)
-#include(${VTK_USE_FILE})
+FIND_PACKAGE(VTK REQUIRED)
+include(${VTK_USE_FILE})
 
 find_package(osuflow)
 
 #set(OSUFLOW_DIR "/usr/local/osuflow" CACHE PATH "OSUFlow dir")
+set(JCLIB_INC_DIR "${CMAKE_SOURCE_DIR}/lib/jclib/" CACHE PATH "JCLib dir")
 set(JCLIB_DIR "${CMAKE_SOURCE_DIR}/lib/jclib/" CACHE PATH "JCLib dir")
+
 #set(OSUFLOW_INCLUDE_DIR "${OSUFLOW_DIR}/include/osuflow")
 #set(OSUFLOW_LIB_DIR "${OSUFLOW_DIR}/lib/osuflow")
 
-include_directories(${JCLIB_DIR})
+include_directories(${JCLIB_INC_DIR})
 link_directories(${JCLIB_DIR})
 
 set(DATA_DIR "/data" CACHE PATH "Directory to PLOT3D data")
@@ -40,14 +42,17 @@ target_link_libraries( convertVTK ${VTK_LIBRARIES} )
 add_executable(StreamlineRenderUnstructured StreamlineRenderUnstructured.cpp)
 target_link_libraries( StreamlineRenderUnstructured ${osuflow_LIBRARIES} ${VTK_LIBRARIES})
 
-add_executable(streamline streamline.cpp)
-target_link_libraries( streamline  ${osuflow_LIBRARIES} ${VTK_LIBRARIES})
+#add_executable(streamline streamline.cpp)
+#target_link_libraries( streamline  ${osuflow_LIBRARIES} ${VTK_LIBRARIES})
 
 add_executable(computeFTLE computeFTLE.cpp)
 target_link_libraries( computeFTLE   ${osuflow_LIBRARIES})
 
-add_executable(regular_sampling regular_sampling.cpp)
-target_link_libraries( regular_sampling ${VTK_LIBRARIES} )
+add_executable(regular_sampling regular_sampling.cpp vtkImageProbeFilter.cxx vtkImageCompositeDataProbeFilter.cxx )
+target_link_libraries( regular_sampling ${VTK_LIBRARIES} libjclib.a)
+
+add_executable(regular_sampling_1passage regular_sampling_1passage.cpp vtkImageProbeFilter.cxx)
+target_link_libraries( regular_sampling_1passage ${VTK_LIBRARIES} )
 
 add_executable(pmi_importance_2var pmi_importance_2var.cpp)
 target_link_libraries( pmi_importance_2var ${VTK_LIBRARIES} )
@@ -80,6 +85,9 @@ target_link_libraries( vts_vortex_merge  ${VTK_LIBRARIES} )
 
 add_executable(extractVariables extractvariables.cpp)
 target_link_libraries( extractVariables  ${VTK_LIBRARIES} jclib)
+
+add_executable(extractVariables_1passage extractvariables_1passage.cpp)
+target_link_libraries( extractVariables_1passage  ${VTK_LIBRARIES} jclib)
 
 add_executable(convertUnstructured convertunstructured.cpp)
 target_link_libraries( convertUnstructured  ${VTK_LIBRARIES} )

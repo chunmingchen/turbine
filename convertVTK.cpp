@@ -71,9 +71,9 @@ vtkSmartPointer<vtkMultiBlockDataSet> load_list(char *list_fname)
 		pl3dReader->SetVectorFunctionNumber(200);
 	    pl3dReader->SetAutoDetectFormat(1);
 
-	    pl3dReader->AddFunction(100);
-	    pl3dReader->AddFunction(110);
-	    pl3dReader->AddFunction(111);
+      pl3dReader->AddFunction(100); // density
+      pl3dReader->AddFunction(110); //Pressure
+      pl3dReader->AddFunction(111);
 	    pl3dReader->AddFunction(112);
 	    pl3dReader->AddFunction(113);
 	    pl3dReader->AddFunction(120);

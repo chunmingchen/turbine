@@ -1,42 +1,33 @@
-idx = 454348
-i = mod(idx , nzcols)+1
-t = floor(idx/nzcols)+1
-selected = coeffs(:,i:nzcols:end);
-selected = selected + repmat(freq_mean, 1, size(selected,2));
-selected(1,:) = [];
+function plot_fft(time, data)
 
-figure;
-subplot(3,3,1)
-imagesc(selected);
-subplot(3,3,2)
-mesh(selected)
-subplot(3,3,3)
-plot(projected(1,i:nzcols:end), projected(2,i:nzcols:end));
-subplot(3,3,4)
-plot(projected(1:2,i:nzcols:end)');
-subplot(3,3,5)
-bar(selected(:,t));
-ylim([0, 0.07])
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% FFT
+Y = fft(data(1,:));
 
-idx2d = nzidx(i)-1;
-x = mod(idx2d, length(Ws))+1;
-y = mod(floor(idx2d/length(Ws)), length(Hs))+1;
-z = floor(idx2d/length(Hs)/length(Ws))+1;
-x3d = Ws(x)-1;
-y3d = Hs(y)-1;
-z3d = Ds(z)-1;
-idx3d = x3d+W*(y3d+H*z3d);
-data=zeros(1,ts);
-for ii=1:ts+period-1
-    filename = sprintf(strcat(filepath, filepattern), id_start+id_step*ii )
-    fp = fopen(filename, 'rb');
-    fseek(fp, idx3d*4, 'bof');
-    % a = fread(fp, [W*H*D,1], 'float32');
-    % data(i) = a(idx3d+1);
-    data(ii) = fread(fp, 1, 'float32');
-    fclose(fp);
+% Compute the two-sided spectrum P2. Then compute the single-sided spectrum P1 based on P2 and the even-valued signal length L.
+L = length(time);             % Length of signal
+P2 = abs(Y/L);
+P1 = P2(1:L/2+1);
+P1(2:end-1) = 2*P1(2:end-1);
+Fs = L;            % Sampling frequency
+% f = Fs*(0:(L/2))/L/(L/3600);
+
+T=3600
+f = (0:1:(L/2))/(L/T);
+% t = 1./f(2:end);
+
+figure
+plot(f, P1)
+
+title('Single-Sided Amplitude Spectrum of X(t)')
+xlabel('f (freq/Revolution)')
+ylabel('|P1(f)|')
+
+
+%removing offset in the pressure data
+data = data - mean(data);
+
+%figure
+% spectrogram(data(1,:),256, 255, 3600, 'yaxis')
+
 end
-subplot(3,3,6)
-plot(data)
-subplot(3,3,7)
-plot(data(t:t+period-1));

@@ -1,4 +1,4 @@
-idx = 5483896
+idx = 454348
 i = mod(idx , nzcols)+1
 t = floor(idx/nzcols)+1
 selected = coeffs(:,i:nzcols:end);
@@ -19,18 +19,21 @@ bar(selected(:,t));
 ylim([0, 0.07])
 
 idx2d = nzidx(i)-1;
-x = mod(idx2d, length(Ws));
-y = mod(idx2d/length(Ws), length(Hs));
-z = floor(idx2d/length(Hs)/length(Ws));
-idx3d = x+W*(y+H*z);
+x = mod(idx2d, length(Ws))+1;
+y = mod(floor(idx2d/length(Ws)), length(Hs))+1;
+z = floor(idx2d/length(Hs)/length(Ws))+1;
+x3d = Ws(x)-1;
+y3d = Hs(y)-1;
+z3d = Ds(z)-1;
+idx3d = x3d+W*(y3d+H*z3d);
 data=zeros(1,ts);
-for i=1:ts+period-1
-    filename = sprintf(strcat(filepath, filepattern), id_start+id_step*i )
+for ii=1:ts+period-1
+    filename = sprintf(strcat(filepath, filepattern), id_start+id_step*ii )
     fp = fopen(filename, 'rb');
     fseek(fp, idx3d*4, 'bof');
     % a = fread(fp, [W*H*D,1], 'float32');
     % data(i) = a(idx3d+1);
-    data(i) = fread(fp, 1, 'float32');
+    data(ii) = fread(fp, 1, 'float32');
     fclose(fp);
 end
 subplot(3,3,6)

@@ -26,8 +26,8 @@
 #include "vtkXMLImageDataReader.h"
 #include "vtkImageData.h"
 #include "vtkPointData.h"
-#include "system/path.h"
-#include "system/cmd_arg_reader.h"
+#include "jclib/system/path.h"
+#include "jclib/system/cmd_arg_reader.h"
 
 #define vsp_new(type, x) vtkSmartPointer<type> x = vtkSmartPointer<type>::New()
 

@@ -1,8 +1,8 @@
 % CASE=1 
 % CASE=1.5
 % CASE=2 % single passage
-CASE=3 % single passage all points
-% CASE=3.1 % 14.20x2
+% CASE=3 % single passage all points
+CASE=3.1 % 14.20x2
 RUN_TEMPDIFF = 0;
 RUN_BOUNDS = 0;
 RUN_PCA = 1;
@@ -59,8 +59,8 @@ elseif CASE==2 % single passage
     Hs=1:H
     Ds=1:D
 elseif CASE==3 % single passage from full annulus
-%     block = 10
-    filepath = '/media/chenchu/TEMP/14.20_13.80_single/'
+    block = 10
+    filepath = '/media/chenchu/volumes/TEMP/14.20_13.80_single/'
     filepattern = strcat('s35_noinj.r2b',int2str(block),'.p3d.g%d_Pressure.raw')
     output_filepattern = strcat('tempdiff/tempdiff_b',int2str(block),'_%d.raw')
     id_start = 0
@@ -70,11 +70,14 @@ elseif CASE==3 % single passage from full annulus
     W=151;  % Note!! Original range
     H=71
     D=56
+%     Ws=1:W
+%     Hs=1:H
+%     Ds=1:D
     Ws = 11:2:81;
     Hs = 40:2:H;
     Ds = 1:2:D;
 elseif CASE==3.1 % single passage from full annulus
-%     block = '10'
+    block = 10
     filepath = '/home/chenchu/volumes/TEMP/14.20_16.00_14.20x2_150523/'
     filepattern = strcat('s35_noinj.r2b',int2str(block),'.p3d.g%d_Pressure.raw')
     output_filepattern = strcat('tempdiff/tempdiff_b',int2str(block),'_%d.raw')
@@ -107,6 +110,7 @@ if RUN_BOUNDS
     freq_mean=zeros(freqs,1);
 end
 for i=1:ts
+    % loading
     if i==1
         for j=i:i+window-1
             filename = sprintf(strcat(filepath, filepattern), id_start+id_step*(j-1) )
@@ -137,6 +141,7 @@ for i=1:ts
     end
     %test(i) = data(88,400,window);
 
+    %% FFT
     if RUN_PCA || RUN_TEMPDIFF || RUN_BOUNDS
         mat = zeros(floor(window/2)+1, n);
         for x=1:n
@@ -160,9 +165,9 @@ for i=1:ts
             diff = mat-premat;
             dist = sqrt(sum(diff.^2,1));
 
-            filename = sprintf(strcat(filepath, output_filepattern), i);
+            output_filename = sprintf(strcat(filepath, output_filepattern), i)
             
-            fp = fopen(filename, 'wb');
+            fp = fopen(output_filename, 'wb');
             fwrite(fp, dist, 'float32');
             fclose(fp);
 
@@ -244,10 +249,10 @@ if RUN_PCA
     fprintf(fp, '%d %d %d\n', size(projected,1), nzcols, ts);  % h-d coefficients
     for i=1:nzcols
         idx = nzidx(i)-1;
-        xx = mod(idx, length(Ws))+1;
-        yy = mod(floor(idx/length(Ws)), length(Hs))+1;
-        zz = floor(idx/length(Ws)/length(Hs))+1;
-        fprintf(fp, '%g %g %g\n', Ws(xx), Hs(yy), Ds(zz)); % non-zero idx based on [W H D]
+        xx = mod(idx, length(Ws));
+        yy = mod(floor(idx/length(Ws)), length(Hs));
+        zz = floor(idx/(length(Ws)*length(Hs)));
+        fprintf(fp, '%d %d %d\n', Ws(xx), Hs(yy), Ds(zz)); % non-zero idx based on [W H D]
         
     end
     fclose(fp);

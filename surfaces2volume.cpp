@@ -14,9 +14,9 @@
 #include <algorithm>
 #include <map>
 #include <assert.h>
-#include <system/path.h>
-#include <file/nrrd.h>
-#include <macros.h>
+#include <jclib/system/path.h>
+#include <jclib/file/nrrd.h>
+#include <jclib/macros.h>
 
 // VTK#include <vtkFloatArray.h>
 #include <vtkPointData.h>

@@ -7,14 +7,13 @@ include(${VTK_USE_FILE})
 find_package(osuflow)
 
 #set(OSUFLOW_DIR "/usr/local/osuflow" CACHE PATH "OSUFlow dir")
-set(JCLIB_INC_DIR "${CMAKE_SOURCE_DIR}/lib/jclib/" CACHE PATH "JCLib dir")
-set(JCLIB_DIR "${CMAKE_SOURCE_DIR}/lib/jclib/" CACHE PATH "JCLib dir")
+set(JCLIB_INSTALL_DIR "${CMAKE_SOURCE_DIR}/lib/jclib/" CACHE PATH "JCLib installed dir")
 
 #set(OSUFLOW_INCLUDE_DIR "${OSUFLOW_DIR}/include/osuflow")
 #set(OSUFLOW_LIB_DIR "${OSUFLOW_DIR}/lib/osuflow")
 
-include_directories(${JCLIB_INC_DIR})
-link_directories(${JCLIB_DIR})
+include_directories(${JCLIB_INSTALL_DIR}/include)
+link_directories(${JCLIB_INSTALL_DIR}/lib/jclib)
 
 set(DATA_DIR "/data" CACHE PATH "Directory to PLOT3D data")
 add_definitions(-DDATA_DIR=\"${DATA_DIR}/\")

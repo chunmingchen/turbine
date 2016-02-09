@@ -11,7 +11,7 @@
 #include <vtkInterpolatedVelocityField.h>
 #include <vtkNew.h>
 #include <vtkMultiBlockPLOT3DReader.h>
-#include <system/path.h>
+#include <jclib/system/path.h>
 #include "MultiBlockVectorFieldVTK.h"
 #include "OSUFlow.h"
 

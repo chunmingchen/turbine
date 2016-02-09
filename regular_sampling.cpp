@@ -41,7 +41,7 @@
 #include "vtkCompositeDataProbeFilter.h"
 #include "vtkXMLImageDataWriter.h"
 #include "vtkImageCompositeDataProbeFilter.h"
-#include "system/path.h"
+#include "jclib/system/path.h"
 
 //#define vtkImageProbeFilter vtkProbeFilter
 //#define vtkImageCompositeDataProbeFilter vtkCompositeDataProbeFilter

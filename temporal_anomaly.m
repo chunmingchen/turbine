@@ -1,11 +1,11 @@
 % CASE=1 
 % CASE=1.5
-% CASE=2 % single passage
+CASE=2 % single passage
 % CASE=3 % single passage all points
-CASE=3.1 % 14.20x2
-RUN_TEMPDIFF = 0;
+% CASE=3.1 % 14.20x2
+RUN_TEMPDIFF = 1;
 RUN_BOUNDS = 0;
-RUN_PCA = 1;
+RUN_PCA = 0;
 RUN_LI2016 = 0;
 if CASE==1  % full annulus
     filepath = '/data/flow2/turbine_Stg/s35_noinj_14.20_13.80_150127_regular_sampled/raw/'
@@ -42,22 +42,22 @@ elseif CASE==1.5 % full annulus     low res
     output_filepattern = 'tempdiff/tempdiff_%d.raw'
     output_filepattern_LI2016 = 'li2016/li2016_%d.raw'
 elseif CASE==2 % single passage
-    slice = '20'; %'40'
-    filepath = '/media/chenchu/TEMP/14.20_13.8_single/'
+    % slice = '20'; %'40'5
+%     filepath = '/media/chenchu/TEMP/14.20_13.8_single/'
+    filepath = '/home/chenchu/volumes/TEMP/single_passage/16.00_13.80x3_12.00_10.00/raw/'
     % filepattern = strcat('s35_noinj.r2b20.p3d.g%d_Pressure_slice',slice,'.raw')
-    filepattern = strcat('s35_noinj.r2b10.p3d.g%d_Pressure_slice',slice,'.raw')
+    filepattern = 'r35.r1b1.p3d.q%d_Pressure.raw';    id_start = 128500;    nfiles = 250
+    
     %output_filepattern = strcat('tempdiff_slice',slice,'_%d.raw')
-    output_filepattern = strcat('tempdiff_b10_slice',slice,'_%d.raw')
-    id_step = 25
-    id_start = 0
-    nfiles = 534
-    period = 144
-    W=71
-    H=56
-    D=1
-    Ws=1:W
-    Hs=1:H
-    Ds=1:D
+    output_filepattern = strcat('tempdiff/tempdiff_%d.raw')
+    id_step = 10 %25
+    period = 36
+    W=181;  % Note!! Original range
+    H=71
+    D=56
+    Ws=1:2:W  % sampling
+    Hs=1:2:H
+    Ds=1:2:D
 elseif CASE==3 % single passage from full annulus
     block = 10
     filepath = '/media/chenchu/volumes/TEMP/14.20_13.80_single/'
@@ -77,11 +77,13 @@ elseif CASE==3 % single passage from full annulus
     Hs = 40:2:H;
     Ds = 1:2:D;
 elseif CASE==3.1 % single passage from full annulus
-    block = 10
-    filepath = '/home/chenchu/volumes/TEMP/14.20_16.00_14.20x2_150523/'
+%     block = 1
+%     filepath = '/home/chenchu/volumes/TEMP/14.20_16.00_14.20x2_150523/';      id_start = 49401
+%     filepath = '/home/chenchu/volumes/TEMP/13.80_141219/';     id_start = 6201
+    filepath = '/home/chenchu/volumes/TEMP/14.20_16.00/';    id_start = 20601
+    
     filepattern = strcat('s35_noinj.r2b',int2str(block),'.p3d.g%d_Pressure.raw')
     output_filepattern = strcat('tempdiff/tempdiff_b',int2str(block),'_%d.raw')
-    id_start = 49401
     id_step = 25
     nfiles = 576
     period = 36
@@ -249,9 +251,9 @@ if RUN_PCA
     fprintf(fp, '%d %d %d\n', size(projected,1), nzcols, ts);  % h-d coefficients
     for i=1:nzcols
         idx = nzidx(i)-1;
-        xx = mod(idx, length(Ws));
-        yy = mod(floor(idx/length(Ws)), length(Hs));
-        zz = floor(idx/(length(Ws)*length(Hs)));
+        xx = mod(idx, length(Ws))+1;
+        yy = mod(floor(idx/length(Ws)), length(Hs))+1;
+        zz = floor(idx/(length(Ws)*length(Hs)))+1;
         fprintf(fp, '%d %d %d\n', Ws(xx), Hs(yy), Ds(zz)); % non-zero idx based on [W H D]
         
     end

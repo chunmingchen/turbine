@@ -1,10 +1,13 @@
 % CASE=1
-% CASE=2 % single passage
+CASE=2 % single passage
+CASE=2.1 % new single passage
 % CASE = 3 % anomaly full
+CASE = 3.1
 % CASE = 1.5 % single passage all points
 % CASE = 4 % single block from full
-CASE = 4.1 % full annulus
+% CASE = 4.1 % full annulus
 
+istep = 1
 if CASE==1
     filepath = '/data/flow2/turbine_Stg/s35_noinj_14.20_13.80_150127_regular_sampled/raw/'
     file_pattern = 'tempdiff_%d.raw'
@@ -48,6 +51,21 @@ elseif CASE==2
     RADIAL_FRAME=false
     starti=2
     endi = nfiles-period
+elseif CASE==2.1    
+    filepath = '/home/chenchu/volumes/TEMP/single_passage/16.00_13.80x3_12.00_10.00/raw/tempdiff/'
+    file_pattern = strcat('tempdiff_%d.raw')
+    nfiles = 250 %250
+    period = 36
+    W=151
+    H=71
+    D=56
+    Ws = 1:2:W;
+    Hs = 1:2:H;
+    Ds = 1:2:D;
+    TH = 0.02
+    RADIAL_FRAME=false
+    starti=2
+    endi = nfiles-period
 elseif CASE==3
     filepath = '/data/flow2/turbine_Stg/s35_noinj_14.20_13.80_150127_regular_sampled/raw/'
     file_pattern = 'anomaly/slice38_%d.raw'
@@ -60,6 +78,22 @@ elseif CASE==3
     RADIAL_FRAME=true
     starti=1
     endi = nfiles
+elseif CASE==3.1
+    filepath = '/home/chenchu/volumes/TEMP/ld_search/TwoVariables_feature_11_neighbor_31/'
+    file_pattern = 'search_result_14.2-13.8-turbine_%d.vti_Entropy_14.2-13.8-turbine_%d.vti_Pressure_31_0.9.raw'
+    nfiles = 28
+    period = 144
+    W=88
+    H=509
+    D=509
+    Ws=1:W
+    Hs=1:H
+    Ds=1:H
+    TH=0.016
+    RADIAL_FRAME=true;
+    starti = 300
+    endi = 570
+    istep = 10
 elseif CASE==4 
     block = '10';
     filepath = '/media/chenchu/TEMP/14.20_13.80_single/tempdiff/'
@@ -97,12 +131,13 @@ end
 if RADIAL_FRAME
     DEGS = 360;
 else
-    DEGS = length(Ws);
+    DEGS = length(Hs);
+%     DEGS = length(Ds);
 end
 degmat = zeros(DEGS, endi);
 n = length(Ws)*length(Hs)*length(Ds);
-for i=starti:endi
-    filename = sprintf(strcat(filepath, file_pattern), i)
+for i=starti:istep:endi
+    filename = sprintf(strcat(filepath, file_pattern), i, i)
     fp = fopen(filename, 'rb');
     data = fread(fp, n, 'float32');
     fclose(fp);
@@ -125,7 +160,8 @@ for i=starti:endi
             deg = mod(deg, 360);
             degmat(deg+1, i) = degmat(deg+1, i)+1;
         else
-            degmat(xx+1, i) = degmat(xx+1, i) + 1;
+            degmat(yy+1, i) = degmat(yy+1, i) + 1;
+%             degmat(zz+1, i) = degmat(zz+1, i) + 1;
         end
     end
     
@@ -138,6 +174,7 @@ cmap = cmap([1:44,64],:);
 cmap = flipud(cmap);
 colormap(cmap)
 
-imagesc(degmat);
+maxval = max(max(degmat));
+imagesc(degmat, [-maxval/45, maxval]);
 xlabel('Time Step');
 ylabel('Degree');

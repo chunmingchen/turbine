@@ -33,6 +33,8 @@
 
 const int VARS=8;
 const char *var_list[] = {"Pressure", "Entropy", "Density", "Lambda2", "Temperature", "Uvel", "VelocityMagnitude", "vtkValidPointMask"}; //, "Entropy"};
+//const int VARS=1;
+//const char *var_list[] = {"vtkValidPointMask"}; //, "Entropy"};
 
 
 int main(int argc, const char **argv)

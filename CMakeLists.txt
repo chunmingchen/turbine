@@ -1,8 +1,15 @@
 cmake_minimum_required (VERSION 2.8)
 project (Turbine)
 
-FIND_PACKAGE(VTK REQUIRED)
-include(${VTK_USE_FILE})
+option (USE_PARAVIEW "use paraview")
+
+if (USE_PARAVIEW)
+  find_package(Paraview)
+  include (${PARAVIEW_USE_FILE})
+else ()
+  FIND_PACKAGE(VTK REQUIRED)
+  include(${VTK_USE_FILE})
+endif ()
 
 find_package(osuflow)
 
@@ -22,6 +29,10 @@ add_definitions(-DDATA_DIR=\"${DATA_DIR}/\")
 find_package(OpenMP)
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+
+## GLM
+set(GLM_DIR "/usr/lib" CACHE PATH "Directory to GLM")
+include_directories(${GLM_DIR})
 
 
 # convertVTK
@@ -90,3 +101,13 @@ target_link_libraries( extractVariables_1passage  ${VTK_LIBRARIES} jclib)
 
 add_executable(convertUnstructured convertunstructured.cpp)
 target_link_libraries( convertUnstructured  ${VTK_LIBRARIES} )
+
+add_executable(gmm_emd gmm_emd.cpp)
+target_link_libraries( gmm_emd  ${VTK_LIBRARIES} )
+
+################################################################33
+# Paraview
+#ADD_PARAVIEW_PLUGIN(LoadTurbine "1.0"
+#  SERVER_MANAGER_XML CellDerivatives.xml)
+
+

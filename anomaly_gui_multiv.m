@@ -13,77 +13,27 @@ function gui(varin)
     COLORING = 0 % count
 %     COLORING = 1 % depth
     switch (CASE)
-        case 0
-            timesteps = 193 %size(data1, 2)
-            target_path='/data/flow2/turbine_Stg/zDIR.P3D.rel.6201-11001/output/'
-        case 1 % 13.8
-            timesteps = 576
-            target_path = '/data/flow2/turbine_Stg/s35_noinj_13.80_141219_turb_6201-20601/output_important/anomaly/'
-        case 2 % 14.2
-            timesteps = 576
-            target_path = '/data/flow2/turbine_Stg/s35_noinj_14.20_150112_turb_6201-20601/output_important/anomaly/'
-        case 3
-            timesteps = 423
-            target_path = '/data/flow2/turbine_Stg/s35_noinj_14.20_14.00_150127_0-10585/output_important/anomaly/'
-        case 4
-            timesteps = 534
-            target_path = '/data/flow2/turbine_Stg/s35_noinj_14.20_13.80_150127/output_important/anomaly/'
-        case 5
-            timesteps = 576
-            target_path = '/data/flow2/turbine_Stg/s35_noinj_14.20_14.00_150127_continue_150212_9001-23400/saved/anomaly/'
-        case 6
-            timesteps = 576
-            target_path = '/data/flow2/turbine_Stg/s35_noinj_14.20_150112_turb_continue_150216_20601-35001/saved/anomaly'
-        case 7
-            timesteps = 576
-            target_path = '/data/flow2/turbine_Stg/s35_noinj_16.00_150301/anomaly'
-        case 8
-            timesteps = 576
-            target_path = '/data/flow2/turbine_Stg/s35_noinj_14.20_150112_turb_continue_150216_continue_150301_35001-/anomaly'
-        case 9
-            timesteps = 576        
-            target_path = '~/volumes/turbine_Stg_wd/s35_noinj_14.20_16.00_13.80_150426/saved/anomaly'
-        case 10
-            timesteps = 576
-            target_path = '~/volumes/turbine_Stg_wd/s35_noinj_14.20_16.00_14.20_150426/saved/anomaly'    
-        case 11
-            timesteps = 576
-            target_path = '~/volumes/turbine_Stg_wd/s35_noinj_14.20_16.00_14.20x2_150523/saved/anomaly'
-        case 12
-            timesteps = 576
-            target_path = '~/volumes/turbine_Stg_wd/s35_noinj_14.20_16.00_14.20x3_150528/saved/anomaly'
-        case 13
-            timesteps = 576
-            target_path = '~/volumes/turbine_Stg_wd/s35_noinj_14.20_16.00_14.20x4_150605/saved/anomaly' % 16->14.20x3
-        case 14
-            timesteps = 576
-            target_path = '~/volumes/turbine_Stg_wd/s35_noinj_14.20_16.00_14.20x5_150812/saved/anomaly' % 16->14.20x3
-        case 15
-            timesteps = {576, 576, 576, 576, 576}
-            target_path = {'~/volumes/turbine_Stg_wd/s35_noinj_14.20_16.00_14.20_150426/saved/anomaly' ,...
-                '~/volumes/turbine_Stg_wd/s35_noinj_14.20_16.00_14.20x2_150523/saved/anomaly', ...
-                '~/volumes/turbine_Stg_wd/s35_noinj_14.20_16.00_14.20x3_150528/saved/anomaly', ...
-                '~/volumes/turbine_Stg_wd/s35_noinj_14.20_16.00_14.20x4_150605/saved/anomaly', ...
-                '~/volumes/turbine_Stg_wd/s35_noinj_14.20_16.00_14.20x5_150812/saved/anomaly'}
         case 16
-            timesteps = 10%576
+            timesteps = 576
             target_path = '~/volumes/TEMP/s35_noinj_14.20_16.00_14.20x2_150523/output'
-            
-            
+                    
     end 
     if nargin==0
-%         var = 'Pressure'
-%         var = 'Entropy'
-%         var = 'TotalPressure'
-%         var = 'Density'
-%         var = 'Temperature'
-%         var = 'VelocityMagnitude'
-        var = 'VelocityGradient'
+%         var = {'Entropy'};
+%         var = {'Pressure'};
+%         var = {'TotalPressure'};
+%         var = {'Density'};
+%         var = {'VelocityMagnitude'};
+        var = {'Entropy','Pressure','TotalPressure','Density','VelocityMagnitude'};
+            %,'Temperature',
     else
         var = varin
     end
     
-    data_p = myload_data(var);
+    data_p = cell(length(var),1);
+    for i=1:length(var)
+        data_p{i} = myload_data(var{i});
+    end
 %     data_d = myload_data('Density');
     
     gdata = data_p
@@ -138,7 +88,7 @@ function gui(varin)
     
     % Make figure visble after adding all components
     surfzlim(0,0)
-    set(f,'Visible','on')
+    set(f,'Visible','on');
     
 
     function setmap(source,callbackdata)
@@ -156,12 +106,10 @@ function gui(varin)
             val = 0;
         end
         
-       %subplot(1,2,1)
-       show(data_p, (val/1000).^2)
-       title(strcat(var, ' Anomaly'))
-       %subplot(1,2,2)
-       %show(data_d, val/1000)
-       %title('Density Anomaly')
+        show(data_p, (val/1000).^2)
+%         title(strcat(var{1}, ' Anomaly'))
+        %show(data_d, val/1000)
+%title('Density Anomaly')
     end
     
     function data = myload_data(var)
@@ -219,42 +167,46 @@ function gui(varin)
         end
     end
 
+    function cmap = create_colormap(a,b)
+        n = 44;
+        R = linspace(a(1), b(1), n);
+        G = linspace(a(2), b(2), n);
+        B = linspace(a(3), b(3), n);
+        R = [1 R];
+        G = [1 G];
+        B = [1 B];
+        cmap = [R' G' B'];
+    end
+
     texthandle = 0;
     function show(sdata, ratio)
-        if 0
-            % remove small area
-            P = 500
-            P1 = sdata.maxsum*ratio 
-            % P1= 3406207*.5  %entropy
-            % P1 = 19885237 *.95  %velocity
-            % P1 = 273366 *.05 %density
-            % Compute the area of each component:
-            BW2 = ismember(sdata.L, find(([sdata.S.Area].*[sdata.S1.MeanIntensity]) >= P1));
-            data1 = sdata.v .*BW2;
-        else
-            data1 = sdata.v;
+        
+        for i=1:length(sdata)
+            n=64;
+            if i==1  
+                cmap = create_colormap([1 .7 .7], [1 0 0]);
+            elseif i==2
+                cmap = create_colormap([.9 .9 .3], [.7 .7 0]);
+            elseif i==3
+                cmap = create_colormap([.7 1 .7], [0 1 0]);
+            elseif i==4
+                cmap = create_colormap([.6 .9 .9], [0 .6 .6]);
+            elseif i==5
+                cmap = create_colormap([.7 .7 1], [0 0 1]);
+            end
+            colormap( cmap );
+            
+            render(sdata{i}.v, var{i})
+            
+            
+            hold on
         end
-        render(data1)
+        hold off
 
-        if  SHOW_HOUGH
-           show_hough(data1)
-        end
-
-        if SHOW_IMLINE
-            texthandle = imline(gca, [10 100], [100 100])
-            id = addNewPositionCallback(texthandle,@showspeed);
-        end
-                
-        if SAVE_IMG
-%             filename = strcat(target_path, '/anomaly.eps')
-            filename = 'anomaly.eps'
-            saveas(gca, filename, 'psc2')
-        end
     end
 
 
-    function render(data1)        
-        degrees = size(data1,1);
+    function render(data1, varname)        
         disp(size(data1,2))
         if COLORING==0
             data2 = squeeze(sum(data1,2));
@@ -280,7 +232,11 @@ function gui(varin)
         seg = (maxval-minval)/44;
 %         imagesc(sqrt(data2), [0 sqrt(maxval)])
 %         imagesc(data2>0, [0 40])
+
         imagesc((data2), [minval-seg (maxval)])
+        
+%         g = data2 / maxval;
+%         set(h, 'AlphaData', g);
         
         if strcmp(SHOW_CASE, 'ANGLE')
             yticklabel = 0:10:360;
@@ -294,12 +250,7 @@ function gui(varin)
             yticklabel = 1:36;
             ylabel('')
         end
-        
-        if SAVE_IMG
-            skip = 50
-        else
-            skip = 10
-        end
+        degrees = size(data2,1);
         set(gca,'YDir','normal',  ...
             'xgrid', 'on', 'xcolor',[.2 .2 .2], ...
             'ygrid', 'on', 'ycolor',[.2 .2 .2], ...
@@ -314,6 +265,13 @@ function gui(varin)
             )
         ylim([1, degrees])
         xlim([1, timesteps])
+        
+        
+        if SAVE_IMG
+            skip = 50
+        else
+            skip = 10
+        end
         
         hold on
         
@@ -336,10 +294,24 @@ function gui(varin)
         
         hold off
         
-        cbr = colorbar;
+        %cbr = colorbar;
         xlabel('Time Step')
-        set(cbr, 'YTick', [0])
+        %set(cbr, 'YTick', [0])
         
+        if  SHOW_HOUGH
+           show_hough(data1)
+        end
+
+        if SHOW_IMLINE
+            texthandle = imline(gca, [10 100], [100 100])
+            id = addNewPositionCallback(texthandle,@showspeed);
+        end
+                
+        if SAVE_IMG
+%             filename = strcat(target_path, '/anomaly.eps')
+            filename = strcat(varname, '_anomaly.eps')
+            saveas(gca, filename, 'psc2')
+        end
     end
 
 %%---------------------------------------------------------------------------------------------

@@ -6,7 +6,7 @@ function gui(varin)
     USER_SPEED_PERCENT =  45
     SHOW_HOUGH = 0
     SHOW_IMLINE = 1
-    CASE=16
+    CASE=8
     SAVE_IMG=1
 %     xextract = 1:16 
     xextract = 7:10;
@@ -31,13 +31,13 @@ function gui(varin)
         case 5
             timesteps = 576
             target_path = '/data/flow2/turbine_Stg/s35_noinj_14.20_14.00_150127_continue_150212_9001-23400/saved/anomaly/'
-        case 6
+        case 6  % 14.2x2
             timesteps = 576
             target_path = '/data/flow2/turbine_Stg/s35_noinj_14.20_150112_turb_continue_150216_20601-35001/saved/anomaly'
         case 7
             timesteps = 576
             target_path = '/data/flow2/turbine_Stg/s35_noinj_16.00_150301/anomaly'
-        case 8
+        case 8  % 14.2x3
             timesteps = 576
             target_path = '/data/flow2/turbine_Stg/s35_noinj_14.20_150112_turb_continue_150216_continue_150301_35001-/anomaly'
         case 9
@@ -72,13 +72,13 @@ function gui(varin)
             
     end 
     if nargin==0
-%         var = 'Pressure'
+        var = 'Pressure'
 %         var = 'Entropy'
 %         var = 'TotalPressure'
 %         var = 'Density'
 %         var = 'Temperature'
 %         var = 'VelocityMagnitude'
-        var = 'VelocityGradient'
+%         var = 'VelocityGradient'
     else
         var = varin
     end

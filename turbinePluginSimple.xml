@@ -1,0 +1,167 @@
+<!-- Refrence: ParaViewCore/ServerManager/SMApplication/Resources -->
+<ServerManagerConfiguration>
+  <ProxyGroup name="sources">
+
+   <SourceProxy class="vtkPythonProgrammableFilter"
+                 label="Turbo data reader"
+                 name="Turbo data reader">
+      <Documentation long_help="Executes a user supplied python script to produce an output dataset."
+                     short_help="Executes a python script to produce data.">
+                     This source will execute a python script to produce an
+                     output dataset. The source keeps a copy of the python
+                     script in Script, and creates Interpretor, a python
+                     interpretor to run the script upon the first
+                     execution.</Documentation>
+      <IntVectorProperty command="SetOutputDataSetType"
+                         default_values="13"
+                         name="OutputDataSetType"
+                         number_of_elements="1"
+                         panel_visibility="default">
+        <EnumerationDomain name="enum">
+          <!-- Values come from vtkType.h-->
+          <!-- <Entry value="8" text="Same as Input"/> -->
+          <!-- text="vtkDataSet" -->
+          <Entry text="vtkPolyData"
+                 value="0" />
+          <!-- <Entry value="1" text="vtkStructuredPoints"/> -->
+          <Entry text="vtkStructuredGrid"
+                 value="2" />
+          <Entry text="vtkRectilinearGrid"
+                 value="3" />
+          <Entry text="vtkUnstructuredGrid"
+                 value="4" />
+          <!-- <Entry value="5" text="vtkPiecewiseFunction"/> -->
+          <Entry text="vtkImageData"
+                 value="6" />
+          <!-- <Entry value="7" text="vtkDataObject"/> -->
+          <!-- <Entry value="9" text="vtkPointSet"/> -->
+          <!-- <Entry value="10" text="vtkUniformGrid"/> -->
+          <!-- <Entry value="11" text="vtkCompositeDataSet"/> -->
+          <!-- <Entry value="12" text="vtkMultigroupDataSet"/> -->
+          <Entry text="vtkMultiblockDataSet"
+                 value="13" />
+          <!-- <Entry value="14" text="vtkHierarchicalDataSet"/> -->
+          <Entry text="vtkHierarchicalBoxDataSet"
+                 value="15" />
+          <!-- <Entry value="16" text="vtkGenericDataSet"/> -->
+          <!-- <Entry value="17" text="vtkHyperOctree"/> -->
+          <!-- <Entry value="18" text="vtkTemporalDataSet"/> -->
+          <Entry text="vtkTable"
+                 value="19" />
+          <!-- <Entry value="20" text="vtkGraph"/> -->
+          <!-- <Entry value="21" text="vtkTree"/> -->
+        </EnumerationDomain>
+        <Documentation>The value of this property determines the dataset type
+        for the output of the programmable source.</Documentation>
+      </IntVectorProperty>
+      <StringVectorProperty command="SetScript"
+                            name="Script"
+                            number_of_elements="1"
+                            panel_visibility="default"
+                            default_values="
+#As a source!!!!!&#10;
+#Remember to set data type to multiblock!!&#10;
+import vtk&#10;
+import sys&#10;
+import os.path&#10;
+def GetUpdateTimestep(algorithm):&#10;
+     #Returns the requested time value, or None if not present&#10;
+     executive = algorithm.GetExecutive()&#10;
+     outInfo = executive.GetOutputInformation(0)&#10;
+     if not outInfo.Has(executive.UPDATE_TIME_STEP()):&#10;
+          return None&#10;
+     return outInfo.Get(executive.UPDATE_TIME_STEP())&#10;
+t = GetUpdateTimestep(self)&#10;
+if t is None:&#10;
+     t=0&#10;
+t=int(t)&#10;
+print t&#10;
+id = 6201+t*25&#10;
+# id = 10001&#10;
+&#10;
+path='/data/flow2/turbine_Stg/zDIR.P3D.rel.6201-11001/'&#10;
+output = self.GetOutput(0)&#10;
+&#10;
+try:&#10;
+     for i in range(0, 36):&#10;
+          print i&#10;
+          file1 =path+'/s35_noinj.r2b'+str(i+1)+'.p3d.g'+str(id)&#10;
+          file2 = path+'/s35_noinj.r2b'+str(i+1)+'.p3d.q'+str(id)&#10;
+          if not os.path.isfile(file1):&#10;
+               print file1+&quot;not found&quot;&#10;
+               return&#10;
+          if not os.path.isfile(file2):&#10;
+               print file2+&quot;not found&quot;&#10;
+               return&#10;
+          reader = vtk.vtkMultiBlockPLOT3DReader()&#10;
+          reader.SetXYZFileName(file1)&#10;
+          reader.SetQFileName(file2)&#10;
+          reader.SetScalarFunctionNumber(110)&#10;
+          reader.SetVectorFunctionNumber(200)&#10;
+          reader.SetAutoDetectFormat(1)&#10;
+          reader.Update()&#10;
+          data = reader.GetOutput().GetBlock(0)&#10;
+          output.SetBlock(i,data)&#10;
+except :&#10;
+    print &quot;Unexpected error:&quot;, sys.exc_info()[0]&#10;
+
+">
+        <Hints>
+          <Widget type="multi_line" syntax="python" />
+        </Hints>
+        <Documentation>This property contains the text of a python program that
+        the programmable source runs.</Documentation>
+      </StringVectorProperty>
+      <StringVectorProperty command="SetInformationScript"
+                            label="Script (RequestInformation)"
+                            name="InformationScript"
+                            number_of_elements="1"
+                            panel_visibility="advanced"
+                            default_values="
+#-- RequestInformation&#10;
+import vtk&#10;
+def SetOutputTimesteps(algorithm, timesteps):&#10;
+     print timesteps&#10;
+     executive = algorithm.GetExecutive()&#10;
+     outInfo = executive.GetOutputInformation(0)&#10;
+     outInfo.Remove(executive.TIME_STEPS())&#10;
+     for timestep in timesteps:&#10;
+      outInfo.Append(executive.TIME_STEPS(), timestep)&#10;
+      outInfo.Remove(executive.TIME_RANGE())&#10;
+      outInfo.Append(executive.TIME_RANGE(), timesteps[0])&#10;
+      outInfo.Append(executive.TIME_RANGE(), timesteps[-1])&#10;
+SetOutputTimesteps(self, range(0,576))&#10;
+print self.GetExecutive().GetOutputInformation(0)
+">
+        <Hints>
+          <Widget type="multi_line" syntax="python" />
+        </Hints>
+        <Documentation>This property is a python script that is executed during
+        the RequestInformation pipeline pass. Use this to provide information
+        such as WHOLE_EXTENT to the pipeline downstream.</Documentation>
+      </StringVectorProperty>
+      <StringVectorProperty animateable="0"
+                            clean_command="ClearParameters"
+                            command="SetParameterInternal"
+                            is_internal="1"
+                            name="Parameters"
+                            number_of_elements_per_command="2"
+                            repeat_command="1"></StringVectorProperty>
+      <StringVectorProperty command="SetPythonPath"
+                            name="PythonPath"
+                            number_of_elements="1"
+                            panel_visibility="advanced">
+        <Documentation>A semi-colon (;) separated list of directories to add to
+        the python library search path.</Documentation>
+      </StringVectorProperty>
+      <DoubleVectorProperty information_only="1"
+                            name="TimestepValues"
+                            repeatable="1">
+        <TimeStepsInformationHelper />
+        <Documentation>Available timestep values.</Documentation>
+      </DoubleVectorProperty>
+      <!-- End ProgrammableSource -->
+    </SourceProxy>
+
+  </ProxyGroup>  <!-- End Filters Group -->
+</ServerManagerConfiguration>

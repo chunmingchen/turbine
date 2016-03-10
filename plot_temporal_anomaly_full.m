@@ -91,20 +91,22 @@ elseif CASE == 5
     starti=1
     endi = nfiles
 elseif CASE == 6       
-    filepath = '/home/chenchu/volumes/TEMP/uncertain/gmm_files_generated_pressure/anomaly/';
+    %filepath =
+    %'/home/chenchu/volumes/TEMP/uncertain/gmm_files_generated_pressure/anomaly/';     starti=6212    
+    filepath = '/home/chenchu/volumes/TEMP/uncertain/14.2x1/pressure_anomaly/out/';  starti = 21612
+%     filepath = '/home/chenchu/volumes/TEMP/uncertain/14.2x2/pressure_anomaly/out/';  starti = 35012
     file_pattern = 'emd_b%d_%d.raw'
-    TH = 0.35 %3.3296
+    TH = 0.5 %3.3296
     res = 1;
 
-    nfiles = 359
+    nfiles = 1339
     period = 360
     W=30
     H=14
-    D=11
+    D=4 %11
     Ws = 1:W;
     Hs = 1:H;
     Ds = 1:D;
-    starti=6212
     stepi = 10
     endi = starti+stepi*(nfiles-1)
 end
@@ -126,6 +128,7 @@ for i=1:nfiles
             xx = mod(idx, length(Ws))+1;
             yy = mod(floor(idx/length(Ws)), length(Hs))+1;            
             zz = floor(idx/length(Ws)/length(Hs))+1;
+            zz = floor((zz-1)/3)+1; %!!!!!!!!!!
             y = zz+ length(Ds)*(b-1);
             
             if CASE==5 && (xx<4 || xx>24) %!!!!!!!!!!

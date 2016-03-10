@@ -98,6 +98,7 @@ try:&#10;
           reader.SetQFileName(file2)&#10;
           reader.SetScalarFunctionNumber(110)&#10;
           reader.SetVectorFunctionNumber(200)&#10;
+          reader.SetVectorFunctionNumber(202)&#10;
           reader.SetAutoDetectFormat(1)&#10;
           reader.Update()&#10;
           data = reader.GetOutput().GetBlock(0)&#10;

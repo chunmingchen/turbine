@@ -9,7 +9,7 @@ CASE = 6 % gmm results
 % CASE_5_TYPE = 3     % KLDiv
 % CASE_5_TYPE = 4     % EMD
 
-
+DISP_Y_RES = 3
 SHOW_CASE = 'PASSAGE'
 stepi = 1
 if CASE==4
@@ -93,17 +93,20 @@ elseif CASE == 5
 elseif CASE == 6       
     %filepath =
     %'/home/chenchu/volumes/TEMP/uncertain/gmm_files_generated_pressure/anomaly/';     starti=6212    
-    filepath = '/home/chenchu/volumes/TEMP/uncertain/14.2x1/pressure_anomaly/out/';  starti = 21612
+%     filepath = '/home/chenchu/volumes/TEMP/uncertain/14.2x1/pressure_anomaly/out/';  starti = 21612
 %     filepath = '/home/chenchu/volumes/TEMP/uncertain/14.2x2/pressure_anomaly/out/';  starti = 35012
+%     filepath = '/home/chenchu/volumes/TEMP/uncertain/14.2x1/entropy_anomaly/raw/';  starti = 21612
+    filepath = '/home/chenchu/volumes/TEMP/uncertain/14.2x2/entropy_anomaly/raw/';  starti = 35012
     file_pattern = 'emd_b%d_%d.raw'
-    TH = 0.5 %3.3296
+    TH = 0.35 %3.3296
     res = 1;
 
     nfiles = 1339
     period = 360
     W=30
     H=14
-    D=4 %11
+    D=11
+    D = ceil(D/DISP_Y_RES);
     Ws = 1:W;
     Hs = 1:H;
     Ds = 1:D;
@@ -111,7 +114,6 @@ elseif CASE == 6
     endi = starti+stepi*(nfiles-1)
 end
 
-    
 DEGS = length(Ds)*36;
 degmat = zeros(DEGS, length(starti:stepi:endi));
 n = length(Ws)*length(Hs)*length(Ds);
@@ -128,7 +130,7 @@ for i=1:nfiles
             xx = mod(idx, length(Ws))+1;
             yy = mod(floor(idx/length(Ws)), length(Hs))+1;            
             zz = floor(idx/length(Ws)/length(Hs))+1;
-            zz = floor((zz-1)/3)+1; %!!!!!!!!!!
+            zz = floor((zz-1)/DISP_Y_RES)+1; %!!!!!!!!!!
             y = zz+ length(Ds)*(b-1);
             
             if CASE==5 && (xx<4 || xx>24) %!!!!!!!!!!
@@ -145,7 +147,7 @@ for i=1:nfiles
     
 end
 
-figure
+% figure
 colormap(hot)
 cmap = colormap(hot);
 cmap = cmap([1:44,64],:);
@@ -159,7 +161,7 @@ yrange = 1:length(Ds)*36;
 maxval = max(max(degmat));
 minval = min(min(degmat));
 seg = (maxval-minval)/45;
-imagesc(xrange, yrange, degmat, [minval-seg, (maxval)]);
+h = imagesc(xrange, yrange, degmat, [minval-seg, (maxval)]);
 yticklabel = 1:36;
 xticklabel = starti:stepi:endi;
 % set(gca,'YTickLabel',{'9' '8' '7' '6' '5' '4' '3' '2' '1' '0'})

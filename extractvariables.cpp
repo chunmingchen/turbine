@@ -31,10 +31,10 @@
 
 #define vsp_new(type, x) vtkSmartPointer<type> x = vtkSmartPointer<type>::New()
 
-const int VARS=8;
-const char *var_list[] = {"Pressure", "Entropy", "Density", "Lambda2", "Temperature", "Uvel", "VelocityMagnitude", "vtkValidPointMask"}; //, "Entropy"};
-//const int VARS=1;
-//const char *var_list[] = {"vtkValidPointMask"}; //, "Entropy"};
+//const int VARS=8;
+//const char *var_list[] = {"Pressure", "Entropy", "Density", "Lambda2", "Temperature", "Uvel", "VelocityMagnitude", "vtkValidPointMask"}; //, "Entropy"};
+const int VARS=1;
+const char *var_list[] = {"emd"};
 
 
 int main(int argc, const char **argv)

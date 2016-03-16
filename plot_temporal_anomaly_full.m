@@ -9,7 +9,7 @@ CASE = 6 % gmm results
 % CASE_5_TYPE = 3     % KLDiv
 % CASE_5_TYPE = 4     % EMD
 
-DISP_Y_RES = 3
+DISP_Y_RES = 11
 SHOW_CASE = 'PASSAGE'
 stepi = 1
 if CASE==4
@@ -147,7 +147,7 @@ for i=1:nfiles
     
 end
 
-% figure
+figure
 colormap(hot)
 cmap = colormap(hot);
 cmap = cmap([1:44,64],:);

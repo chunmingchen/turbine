@@ -17,6 +17,7 @@
 
 #include <boost/math/distributions/normal.hpp>
 #include <jclib/statistics.h>
+#include <jclib/cp_time.h>
 
 using namespace std;
 
@@ -32,6 +33,7 @@ const int psg_size = xdim*ydim*zdim*BLOCKS_PER_PSG;
 float meanAry[PASSAGES][4][psg_size];
 float stdAry[PASSAGES][4][psg_size];
 float weightAry[PASSAGES][4][psg_size];
+float anomaly_ary[PASSAGES][psg_size];
 
 void merge_arrays(vtkMultiBlockDataSet *mb)
 {
@@ -83,23 +85,24 @@ void getCdf(float mAry[4], float sAry[4], float wAry[4], float edges[NBINS], flo
 #endif
 }
 
-int main(int argc, char **argv)
-{
-  printf ("gmm_emd <filename> <output_file_id>\n");
-  if (argc<=2)
-    return 1;
-  string filename = argv[1];
-  int file_id = atoi(argv[2]);
+char file_pattern[] = "generated_gmm_%d.vtm";
+long long read_time = 0, runtime = 0, write_time = 0;
 
+int run(string filename, int file_id)
+{
+  Timer timer;
+
+  timer.start();
   vsp_new(vtkXMLMultiBlockDataReader, reader);
   reader->SetFileName(filename.c_str());
   reader->Update();
   vtkMultiBlockDataSet *mb = vtkMultiBlockDataSet::SafeDownCast( reader->GetOutput() );
   assert(mb);
+  timer.end();
+  read_time += timer.getElapsedUS();
 
+  timer.start();
   merge_arrays(mb);
-
-  vector<vector<float> > anomaly_ary (PASSAGES, vector<float>(psg_size));
 
   float ptMeanAry[PASSAGES][4];
   float ptStdAry[PASSAGES][4];
@@ -163,6 +166,11 @@ int main(int argc, char **argv)
     }
 
   } // idx
+  timer.end();
+  runtime += timer.getElapsedUS();
+
+#if 0
+  timer.start();
 
   for (int p=0; p<PASSAGES; p++)
   {
@@ -173,8 +181,10 @@ int main(int argc, char **argv)
     fwrite(&anomaly_ary[p][0], sizeof(float), psg_size, fp);
     fclose(fp);
   }
-
-#if 1  // save vtk format
+  timer.end();
+  write_time += timer.getElapsedUS();
+#endif
+#if 0  // save vtk format
   vsp_new(vtkXMLMultiBlockDataWriter, writer);
 
   for (int p=0; p<PASSAGES; p++)
@@ -199,4 +209,41 @@ int main(int argc, char **argv)
   writer->SetEncodeAppendedData(0);
   writer->Write();
 #endif
+  return 0;
+}
+
+int main(int argc, char **argv)
+{
+  printf ("gmm_emd <filepath> <init id> <id step> <timesteps>\n");
+  if (argc<=4)
+    return 1;
+  string filepath = argv[1];
+  int init_id = atoi(argv[2]);
+  int id_step = atoi(argv[3]);
+  int timesteps = atoi(argv[4]);
+
+  for (int i=0; i<timesteps; i++)
+  {
+    char s[1024];
+    sprintf(s, file_pattern, init_id + i * id_step);
+    string filename = filepath + "/" + s;
+
+    cout << "processing " << filename << endl;
+
+    run(filename, i);
+
+    Timer timer;
+    timer.start();
+
+    // file write codes here
+    // results are in anomaly_ary[PASSAGES][(xdim*BLOCKS_PER_PSG)*ydim*zdim]
+
+    timer.end();
+    write_time += timer.getElapsedUS();
+  }
+  printf("Done for %d time steps\n", timesteps);
+  printf("Total Read  time: %lf secs\n", (double)read_time * 1e-6 );
+  printf("Total Run   time: %lf secs\n", (double)runtime * 1e-6 );
+  printf("Total Write time: %lf secs\n", (double)write_time * 1e-6 );
+
 }
